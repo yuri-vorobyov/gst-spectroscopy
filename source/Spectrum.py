@@ -19,6 +19,11 @@ class Spectrum:
         'DTGS': 2650  # nm (technically, this particular value is limited by the substrate, not the detector)
     }
     PRINT_HEADER = True
+    COLORS = {
+        'Si': '#1f77b5',
+        'InGaAs': '#fd8114',
+        'DTGS': '#d82a2d'
+    }
 
     def __init__(self, Si='', InGaAs='', DTGS='', temperature='RT'):
         """
@@ -38,6 +43,11 @@ class Spectrum:
             if DTGS:
                 print(f'MIR: {Spectrum.__file_header(DTGS)}')
 
+        # Initialize instance variables.
+        self.raw_vis_data = None
+        self.raw_nir_data = None
+        self.raw_mir_data = None
+
         # Load raw data, convert it to the internal representation and save for later use
         if Si:
             data = np.loadtxt(Si, skiprows=1, dtype=np.float64)
@@ -55,16 +65,24 @@ class Spectrum:
         # Save value of temperature
         self.temperature = temperature
 
-    def plot_raw_spectra(self, spectra):
+    def plot_raw(self, signal='Signal', title=''):
         """Show the plot of raw spectra data."""
-        if 'VIS' in spectra:
-            plt.plot(self.raw_vis_data[:, 0], self.raw_vis_data[:, 1])
-        if 'NIR' in spectra:
-            plt.plot(self.raw_nir_data[:, 0], self.raw_nir_data[:, 1])
-        if 'MIR' in spectra:
-            plt.plot(self.raw_mir_data[:, 0], self.raw_mir_data[:, 1])
+        plt.style.use('style.mplstyle')
+        plt.rcParams['savefig.directory'] = '.'
+        fig, ax = plt.subplots(1, 1)
+        fig.canvas.manager.set_window_title(title)
+        ax.set_title(title)
+        ax.set_xlabel(r'Wavelength (nm)')
+        ax.set_ylabel(signal)
 
-        plt.show()
+        if self.raw_vis_data is not None:
+            ax.plot(self.raw_vis_data[:, 0], self.raw_vis_data[:, 1], c=Spectrum.COLORS['Si'], alpha=0.7)
+        if self.raw_nir_data is not None:
+            ax.plot(self.raw_nir_data[:, 0], self.raw_nir_data[:, 1], c=Spectrum.COLORS['InGaAs'], alpha=0.7)
+        if self.raw_mir_data is not None:
+            ax.plot(self.raw_mir_data[:, 0], self.raw_mir_data[:, 1], c=Spectrum.COLORS['DTGS'], alpha=0.7)
+
+        plt.show(block=True)
 
     @staticmethod
     def __file_header(fname):
@@ -101,3 +119,4 @@ if __name__ == '__main__':
     Spectrum.PRINT_HEADER = True
     s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
                  DTGS='../data/2024-04-16/1000nm/R/R_270c3_(GST_1000nm)_DTGS_MIR_CaF2.csv')
+    s.plot_raw(signal='R', title='2024-04-16')
