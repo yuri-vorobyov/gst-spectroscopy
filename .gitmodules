@@ -1,0 +1,3 @@
+[submodule "source/sg_smooth"]
+	path = source/sg_smooth
+	url = https://github.com/yuri-vorobyov/sg-smooth.git
