@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sg_smooth.smoothing import smSG_bisquare
+from scipy.interpolate import interp1d
 
 
 class Spectrum:
@@ -17,9 +18,9 @@ class Spectrum:
     WAVELENGTH_MAX = {
         'Si': 1160,  # nm
         'InGaAs': 2450,  # nm
-        'DTGS': 2650  # nm (technically, this particular value is limited by the substrate, not the detector)
+        'DTGS': 6650  # nm
     }
-    PRINT_HEADER = True
+    PRINT_HEADER = False
     COLORS = {
         'Si': '#1f77b5',
         'InGaAs': '#fd8114',
@@ -58,17 +59,26 @@ class Spectrum:
         self.__raw_vis_data = None
         self.__raw_nir_data = None
         self.__raw_mir_data = None
+        self.__smoothed_vis_data = None
+        self.__smoothed_nir_data = None
+        self.__smoothed_mir_data = None
+        self.__corrected_nir_data = None
+        self.__corrected_mir_data = None
+        self.detectors = set()
 
         # Load raw data, convert it to the internal representation and save for later use
         if Si:
+            self.detectors.add('VIS')
             data = np.loadtxt(Si, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
             self.__raw_vis_data = Spectrum.__strip_wl(data, 'Si')
         if InGaAs:
+            self.detectors.add('NIR')
             data = np.loadtxt(InGaAs, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
             self.__raw_nir_data = Spectrum.__strip_wl(data, 'InGaAs')
         if DTGS:
+            self.detectors.add('MIR')
             data = np.loadtxt(DTGS, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
             self.__raw_mir_data = Spectrum.__strip_wl(data, 'DTGS')
@@ -77,6 +87,7 @@ class Spectrum:
         self.temperature = temperature
 
         self.__calculate_smoothed()
+        self.__calculate_corrected(kind='linear')
 
     @staticmethod
     def __plot(data_vis, data_nir, data_mir, signal='Signal', title=''):
@@ -116,6 +127,24 @@ class Spectrum:
         Spectrum.__plot(self.__smoothed_vis_data, self.__smoothed_nir_data, self.__smoothed_mir_data,
                         signal, title)
 
+    def plot_corrected(self, signal='Signal', title=''):
+        """Show the plot of corrected spectra data."""
+        vis, nir, mir = None, None, None
+        if 'VIS' in self.detectors:
+            vis = self.__raw_vis_data
+        if 'NIR' in self.detectors:
+            if self.__corrected_nir_data is not None:
+                nir = self.__corrected_nir_data
+            else:
+                nir = self.__raw_nir_data
+        if 'MIR' in self.detectors:
+            if self.__corrected_mir_data is not None:
+                mir = self.__corrected_mir_data
+            else:
+                mir = self.__raw_mir_data
+
+        Spectrum.__plot(vis, nir, mir, signal, title)
+
     @staticmethod
     def __file_header(fname):
         """Returns first line of a text file (hopefully with spectrum info)."""
@@ -147,9 +176,6 @@ class Spectrum:
         return data
 
     def __calculate_smoothed(self):
-        self.__smoothed_vis_data = None
-        self.__smoothed_nir_data = None
-        self.__smoothed_mir_data = None
         if self.__raw_vis_data is not None:
             self.__smoothed_vis_data = np.column_stack(smSG_bisquare(self.__raw_vis_data[:, 0],
                                                                      self.__raw_vis_data[:, 1],
@@ -169,9 +195,56 @@ class Spectrum:
                                                                      Spectrum.SMOOTHING_POLY_ORDER['DTGS'],
                                                                      extend=False))
 
+    def __calculate_corrected(self, kind='uniform'):
+        # Check for correctness.
+        if self.detectors == {'VIS', 'MIR'}:
+            raise Exception('Cannot stitch VIS with MIR.')
+        if len(self.detectors) == 1:
+            raise Exception('Only one spectrum is provided — nothing to stitch.')
+
+        # Perform stitching for two-detector case.
+        if len(self.detectors) == 2:
+            # Alias those two spectra.
+            if self.detectors == {'VIS', 'NIR'}:
+                left, right = self.__raw_vis_data, np.copy(self.__raw_nir_data)
+                left_sm, right_sm = self.__smoothed_vis_data, self.__smoothed_nir_data
+            else:
+                left, right = self.__raw_nir_data, np.copy(self.__raw_mir_data)
+                left_sm, right_sm = self.__smoothed_nir_data, self.__smoothed_mir_data
+
+            # Interpolate for the same set of wavelengths.
+            w0, w1 = right_sm[0, 0], left_sm[-1, 0]
+            N = 500
+            w = np.linspace(w0 + 1, w1 - 1, N)
+            f = interp1d(left_sm[left_sm[:, 0] >= w0, 0],
+                         left_sm[left_sm[:, 0] >= w0, 1],
+                         'cubic', assume_sorted=True)(w)
+            g = interp1d(right_sm[right_sm[:, 0] <= w1, 0],
+                         right_sm[right_sm[:, 0] <= w1, 1],
+                         'cubic', assume_sorted=True)(w)
+
+            # Correct right spectrum.
+            A = (g * g).sum()
+            D = (f * g).sum()
+            if kind == 'uniform':
+                b = D / A
+                right[:, 1] = right[:, 1] * b
+            else:
+                B = (w * g * g).sum()
+                C = (w * w * g * g).sum()
+                E = (w * f * g).sum()
+                a0 = (C * D - E * B) / (C * A - B * B)
+                a1 = (E * A - D * B) / (C * A - B * B)
+                right[:, 1] = (a0 + a1 * right[:, 0]) * right[:, 1]
+
+            # And save it.
+            if self.detectors == {'VIS', 'NIR'}:
+                self.__corrected_nir_data = right
+            else:
+                self.__corrected_mir_data = right
+
 
 if __name__ == '__main__':
-    Spectrum.PRINT_HEADER = True
     s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
                  DTGS='../data/2024-04-16/1000nm/R/R_270c3_(GST_1000nm)_DTGS_MIR_CaF2.csv')
-    s.plot_smoothed(signal='R', title='2024-04-16')
+    s.plot_corrected(signal='R', title='2024-04-16')
