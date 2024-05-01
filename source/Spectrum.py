@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from sg_smooth.smoothing import smSG_bisquare
 
 
 class Spectrum:
@@ -24,6 +25,16 @@ class Spectrum:
         'InGaAs': '#fd8114',
         'DTGS': '#d82a2d'
     }
+    SMOOTHING_WINDOW_RADIUS = {
+        'Si': 150,
+        'InGaAs': 150,
+        'DTGS': 150
+    }
+    SMOOTHING_POLY_ORDER = {
+        'Si': 3,
+        'InGaAs': 3,
+        'DTGS': 3
+    }
 
     def __init__(self, Si='', InGaAs='', DTGS='', temperature='RT'):
         """
@@ -44,29 +55,40 @@ class Spectrum:
                 print(f'MIR: {Spectrum.__file_header(DTGS)}')
 
         # Initialize instance variables.
-        self.raw_vis_data = None
-        self.raw_nir_data = None
-        self.raw_mir_data = None
+        self.__raw_vis_data = None
+        self.__raw_nir_data = None
+        self.__raw_mir_data = None
 
         # Load raw data, convert it to the internal representation and save for later use
         if Si:
             data = np.loadtxt(Si, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
-            self.raw_vis_data = Spectrum.__strip_wl(data, 'Si')
+            self.__raw_vis_data = Spectrum.__strip_wl(data, 'Si')
         if InGaAs:
             data = np.loadtxt(InGaAs, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
-            self.raw_nir_data = Spectrum.__strip_wl(data, 'InGaAs')
+            self.__raw_nir_data = Spectrum.__strip_wl(data, 'InGaAs')
         if DTGS:
             data = np.loadtxt(DTGS, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
-            self.raw_mir_data = Spectrum.__strip_wl(data, 'DTGS')
+            self.__raw_mir_data = Spectrum.__strip_wl(data, 'DTGS')
 
         # Save value of temperature
         self.temperature = temperature
 
-    def plot_raw(self, signal='Signal', title=''):
-        """Show the plot of raw spectra data."""
+        self.__calculate_smoothed()
+
+    @staticmethod
+    def __plot(data_vis, data_nir, data_mir, signal='Signal', title=''):
+        """
+        Plot the spectrum.
+
+        :param data_vis: A VIS spectrum in the table form (1st column for wavelength in nm, 2nd — for signal intensity).
+        :param data_nir: A NIR spectrum in the table form (1st column for wavelength in nm, 2nd — for signal intensity).
+        :param data_mir: A MIR spectrum in the table form (1st column for wavelength in nm, 2nd — for signal intensity).
+        :param signal: Label of the vertical axis.
+        :param title: Plot title.
+        """
         plt.style.use('style.mplstyle')
         plt.rcParams['savefig.directory'] = '.'
         fig, ax = plt.subplots(1, 1)
@@ -75,14 +97,24 @@ class Spectrum:
         ax.set_xlabel(r'Wavelength (nm)')
         ax.set_ylabel(signal)
 
-        if self.raw_vis_data is not None:
-            ax.plot(self.raw_vis_data[:, 0], self.raw_vis_data[:, 1], c=Spectrum.COLORS['Si'], alpha=0.7)
-        if self.raw_nir_data is not None:
-            ax.plot(self.raw_nir_data[:, 0], self.raw_nir_data[:, 1], c=Spectrum.COLORS['InGaAs'], alpha=0.7)
-        if self.raw_mir_data is not None:
-            ax.plot(self.raw_mir_data[:, 0], self.raw_mir_data[:, 1], c=Spectrum.COLORS['DTGS'], alpha=0.7)
+        if data_vis is not None:
+            ax.plot(data_vis[:, 0], data_vis[:, 1], c=Spectrum.COLORS['Si'], alpha=0.7)
+        if data_nir is not None:
+            ax.plot(data_nir[:, 0], data_nir[:, 1], c=Spectrum.COLORS['InGaAs'], alpha=0.7)
+        if data_mir is not None:
+            ax.plot(data_mir[:, 0], data_mir[:, 1], c=Spectrum.COLORS['DTGS'], alpha=0.7)
 
         plt.show(block=True)
+
+    def plot_raw(self, signal='Signal', title=''):
+        """Show the plot of raw spectra data."""
+        Spectrum.__plot(self.__raw_vis_data, self.__raw_nir_data, self.__raw_mir_data,
+                        signal, title)
+
+    def plot_smoothed(self, signal='Signal', title=''):
+        """Show the plot of smoothed spectra data."""
+        Spectrum.__plot(self.__smoothed_vis_data, self.__smoothed_nir_data, self.__smoothed_mir_data,
+                        signal, title)
 
     @staticmethod
     def __file_header(fname):
@@ -114,9 +146,32 @@ class Spectrum:
         data = data[(data[:, 0] > min_wl) * (data[:, 0] < max_wl)]
         return data
 
+    def __calculate_smoothed(self):
+        self.__smoothed_vis_data = None
+        self.__smoothed_nir_data = None
+        self.__smoothed_mir_data = None
+        if self.__raw_vis_data is not None:
+            self.__smoothed_vis_data = np.column_stack(smSG_bisquare(self.__raw_vis_data[:, 0],
+                                                                     self.__raw_vis_data[:, 1],
+                                                                     Spectrum.SMOOTHING_WINDOW_RADIUS['Si'],
+                                                                     Spectrum.SMOOTHING_POLY_ORDER['Si'],
+                                                                     extend=False))
+        if self.__raw_nir_data is not None:
+            self.__smoothed_nir_data = np.column_stack(smSG_bisquare(self.__raw_nir_data[:, 0],
+                                                                     self.__raw_nir_data[:, 1],
+                                                                     Spectrum.SMOOTHING_WINDOW_RADIUS['InGaAs'],
+                                                                     Spectrum.SMOOTHING_POLY_ORDER['InGaAs'],
+                                                                     extend=False))
+        if self.__raw_mir_data is not None:
+            self.__smoothed_mir_data = np.column_stack(smSG_bisquare(self.__raw_mir_data[:, 0],
+                                                                     self.__raw_mir_data[:, 1],
+                                                                     Spectrum.SMOOTHING_WINDOW_RADIUS['DTGS'],
+                                                                     Spectrum.SMOOTHING_POLY_ORDER['DTGS'],
+                                                                     extend=False))
+
 
 if __name__ == '__main__':
     Spectrum.PRINT_HEADER = True
     s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
                  DTGS='../data/2024-04-16/1000nm/R/R_270c3_(GST_1000nm)_DTGS_MIR_CaF2.csv')
-    s.plot_raw(signal='R', title='2024-04-16')
+    s.plot_smoothed(signal='R', title='2024-04-16')
