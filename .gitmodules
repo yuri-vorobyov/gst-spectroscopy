@@ -1,3 +1,6 @@
 [submodule "source/sg_smooth"]
 	path = source/sg_smooth
 	url = https://github.com/yuri-vorobyov/sg-smooth.git
+[submodule "source/optical_constants"]
+	path = source/optical_constants
+	url = https://github.com/yuri-vorobyov/optical-constants.git
