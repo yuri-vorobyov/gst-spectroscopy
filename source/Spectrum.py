@@ -243,6 +243,24 @@ class Spectrum:
             else:
                 self.__corrected_mir_data = right
 
+    @property
+    def min_wl(self):
+        if 'VIS' in self.detectors:
+            return self._raw_vis_data[0, 0]
+        elif 'NIR' in self.detectors:
+            return self._raw_nir_data[0, 0]
+        else:
+            return self._raw_mir_data[0, 0]
+
+    @property
+    def max_wl(self):
+        if 'MIR' in self.detectors:
+            return self._raw_mir_data[-1, 0]
+        elif 'NIR' in self.detectors:
+            return self._raw_nir_data[-1, 0]
+        else:
+            return self._raw_vis_data[-1, 0]
+
 
 if __name__ == '__main__':
     s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
