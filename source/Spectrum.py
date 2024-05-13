@@ -95,8 +95,8 @@ class Spectrum:
         # Save value of temperature
         self.temperature = temperature
 
-        self.__calculate_smoothed()
-        self.__calculate_corrected(kind='linear')
+        # self.__calculate_smoothed()
+        # self.__calculate_corrected(kind='linear')
 
     @staticmethod
     def __assert_detector(detector):
