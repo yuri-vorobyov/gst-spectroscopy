@@ -279,6 +279,26 @@ class Spectrum:
         else:
             return self._raw_vis_data[-1, 0]
 
+    def get_wavelengths(self, detector):
+        """
+        Returns the wavelength vector for the specified detector.
+
+        Parameters
+        ----------
+        detector : str
+            Data corresponding to which detector should be returned.
+
+        Returns
+        -------
+        out : ndarray
+            Wavelength vector.
+        """
+        Spectrum.__assert_detector(detector)
+        self.__assert_detector_in_use(detector)
+        return {'Si': self._raw_vis_data[:, 0],
+                'InGaAs': self._raw_nir_data[:, 0],
+                'DTGS': self._raw_mir_data[:, 0]}[detector]
+
 
 if __name__ == '__main__':
     s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
