@@ -56,12 +56,12 @@ class Spectrum:
                 print(f'MIR: {Spectrum.__file_header(DTGS)}')
 
         # Initialize instance variables.
-        self.__raw_vis_data = None
-        self.__raw_nir_data = None
-        self.__raw_mir_data = None
-        self.__smoothed_vis_data = None
-        self.__smoothed_nir_data = None
-        self.__smoothed_mir_data = None
+        self._raw_vis_data = None
+        self._raw_nir_data = None
+        self._raw_mir_data = None
+        self._smoothed_vis_data = None
+        self._smoothed_nir_data = None
+        self._smoothed_mir_data = None
         self.__corrected_nir_data = None
         self.__corrected_mir_data = None
         self.detectors = set()
@@ -71,17 +71,17 @@ class Spectrum:
             self.detectors.add('VIS')
             data = np.loadtxt(Si, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
-            self.__raw_vis_data = Spectrum.__strip_wl(data, 'Si')
+            self._raw_vis_data = Spectrum.__strip_wl(data, 'Si')
         if InGaAs:
             self.detectors.add('NIR')
             data = np.loadtxt(InGaAs, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
-            self.__raw_nir_data = Spectrum.__strip_wl(data, 'InGaAs')
+            self._raw_nir_data = Spectrum.__strip_wl(data, 'InGaAs')
         if DTGS:
             self.detectors.add('MIR')
             data = np.loadtxt(DTGS, skiprows=1, dtype=np.float64)
             data = Spectrum.__convert_to_nm(data)
-            self.__raw_mir_data = Spectrum.__strip_wl(data, 'DTGS')
+            self._raw_mir_data = Spectrum.__strip_wl(data, 'DTGS')
 
         # Save value of temperature
         self.temperature = temperature
@@ -119,29 +119,29 @@ class Spectrum:
 
     def plot_raw(self, signal='Signal', title=''):
         """Show the plot of raw spectra data."""
-        Spectrum.__plot(self.__raw_vis_data, self.__raw_nir_data, self.__raw_mir_data,
+        Spectrum.__plot(self._raw_vis_data, self._raw_nir_data, self._raw_mir_data,
                         signal, title)
 
     def plot_smoothed(self, signal='Signal', title=''):
         """Show the plot of smoothed spectra data."""
-        Spectrum.__plot(self.__smoothed_vis_data, self.__smoothed_nir_data, self.__smoothed_mir_data,
+        Spectrum.__plot(self._smoothed_vis_data, self._smoothed_nir_data, self._smoothed_mir_data,
                         signal, title)
 
     def plot_corrected(self, signal='Signal', title=''):
         """Show the plot of corrected spectra data."""
         vis, nir, mir = None, None, None
         if 'VIS' in self.detectors:
-            vis = self.__raw_vis_data
+            vis = self._raw_vis_data
         if 'NIR' in self.detectors:
             if self.__corrected_nir_data is not None:
                 nir = self.__corrected_nir_data
             else:
-                nir = self.__raw_nir_data
+                nir = self._raw_nir_data
         if 'MIR' in self.detectors:
             if self.__corrected_mir_data is not None:
                 mir = self.__corrected_mir_data
             else:
-                mir = self.__raw_mir_data
+                mir = self._raw_mir_data
 
         Spectrum.__plot(vis, nir, mir, signal, title)
 
@@ -175,27 +175,27 @@ class Spectrum:
         data = data[(data[:, 0] > min_wl) * (data[:, 0] < max_wl)]
         return data
 
-    def __calculate_smoothed(self):
-        if self.__raw_vis_data is not None:
-            self.__smoothed_vis_data = np.column_stack(smSG_bisquare(self.__raw_vis_data[:, 0],
-                                                                     self.__raw_vis_data[:, 1],
-                                                                     Spectrum.SMOOTHING_WINDOW_RADIUS['Si'],
-                                                                     Spectrum.SMOOTHING_POLY_ORDER['Si'],
-                                                                     extend=False))
-        if self.__raw_nir_data is not None:
-            self.__smoothed_nir_data = np.column_stack(smSG_bisquare(self.__raw_nir_data[:, 0],
-                                                                     self.__raw_nir_data[:, 1],
-                                                                     Spectrum.SMOOTHING_WINDOW_RADIUS['InGaAs'],
-                                                                     Spectrum.SMOOTHING_POLY_ORDER['InGaAs'],
-                                                                     extend=False))
-        if self.__raw_mir_data is not None:
-            self.__smoothed_mir_data = np.column_stack(smSG_bisquare(self.__raw_mir_data[:, 0],
-                                                                     self.__raw_mir_data[:, 1],
-                                                                     Spectrum.SMOOTHING_WINDOW_RADIUS['DTGS'],
-                                                                     Spectrum.SMOOTHING_POLY_ORDER['DTGS'],
-                                                                     extend=False))
+    def _calculate_smoothed(self):
+        if self._raw_vis_data is not None:
+            self._smoothed_vis_data = np.column_stack(smSG_bisquare(self._raw_vis_data[:, 0],
+                                                                    self._raw_vis_data[:, 1],
+                                                                    Spectrum.SMOOTHING_WINDOW_RADIUS['Si'],
+                                                                    Spectrum.SMOOTHING_POLY_ORDER['Si'],
+                                                                    extend=False))
+        if self._raw_nir_data is not None:
+            self._smoothed_nir_data = np.column_stack(smSG_bisquare(self._raw_nir_data[:, 0],
+                                                                    self._raw_nir_data[:, 1],
+                                                                    Spectrum.SMOOTHING_WINDOW_RADIUS['InGaAs'],
+                                                                    Spectrum.SMOOTHING_POLY_ORDER['InGaAs'],
+                                                                    extend=False))
+        if self._raw_mir_data is not None:
+            self._smoothed_mir_data = np.column_stack(smSG_bisquare(self._raw_mir_data[:, 0],
+                                                                     self._raw_mir_data[:, 1],
+                                                                    Spectrum.SMOOTHING_WINDOW_RADIUS['DTGS'],
+                                                                    Spectrum.SMOOTHING_POLY_ORDER['DTGS'],
+                                                                    extend=False))
 
-    def __calculate_corrected(self, kind='uniform'):
+    def _calculate_corrected(self, kind='uniform'):
         # Check for correctness.
         if self.detectors == {'VIS', 'MIR'}:
             raise Exception('Cannot stitch VIS with MIR.')
@@ -206,11 +206,11 @@ class Spectrum:
         if len(self.detectors) == 2:
             # Alias those two spectra.
             if self.detectors == {'VIS', 'NIR'}:
-                left, right = self.__raw_vis_data, np.copy(self.__raw_nir_data)
-                left_sm, right_sm = self.__smoothed_vis_data, self.__smoothed_nir_data
+                left, right = self._raw_vis_data, np.copy(self._raw_nir_data)
+                left_sm, right_sm = self._smoothed_vis_data, self._smoothed_nir_data
             else:
-                left, right = self.__raw_nir_data, np.copy(self.__raw_mir_data)
-                left_sm, right_sm = self.__smoothed_nir_data, self.__smoothed_mir_data
+                left, right = self._raw_nir_data, np.copy(self._raw_mir_data)
+                left_sm, right_sm = self._smoothed_nir_data, self._smoothed_mir_data
 
             # Interpolate for the same set of wavelengths.
             w0, w1 = right_sm[0, 0], left_sm[-1, 0]
