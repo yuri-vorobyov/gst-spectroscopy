@@ -100,12 +100,12 @@ class Spectrum:
 
     @staticmethod
     def __assert_detector(detector):
-        if detector not in {'Si', 'InGaAs', 'DTGS'}:
-            raise Exception('`detector` should be one of "Si", "InGaAs", or "DTGS"')
+        if detector not in {'VIS', 'NIR', 'MIR'}:
+            raise Exception('`detector` should be one of "VIS", "NIR", or "MIR"')
 
     def __assert_detector_in_use(self, detector):
         if detector not in self.detectors:
-            raise Exception('No data provided for {detector}')
+            raise Exception(f'No data provided for {detector}, only {self.detectors} are given.')
 
     @staticmethod
     def __plot(data_vis, data_nir, data_mir, signal='Signal', title=''):
@@ -295,9 +295,12 @@ class Spectrum:
         """
         Spectrum.__assert_detector(detector)
         self.__assert_detector_in_use(detector)
-        return {'Si': self._raw_vis_data[:, 0],
-                'InGaAs': self._raw_nir_data[:, 0],
-                'DTGS': self._raw_mir_data[:, 0]}[detector]
+        if detector == 'VIS':
+            return self._raw_vis_data[:, 0]
+        elif detector == 'NIR':
+            return self._raw_nir_data[:, 0]
+        elif detector == 'MIR':
+            return self._raw_mir_data[:, 0]
 
 
 if __name__ == '__main__':
