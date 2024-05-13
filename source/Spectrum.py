@@ -90,6 +90,15 @@ class Spectrum:
         self.__calculate_corrected(kind='linear')
 
     @staticmethod
+    def __assert_detector(detector):
+        if detector not in {'Si', 'InGaAs', 'DTGS'}:
+            raise Exception('`detector` should be one of "Si", "InGaAs", or "DTGS"')
+
+    def __assert_detector_in_use(self, detector):
+        if detector not in self.detectors:
+            raise Exception('No data provided for {detector}')
+
+    @staticmethod
     def __plot(data_vis, data_nir, data_mir, signal='Signal', title=''):
         """
         Plot the spectrum.
