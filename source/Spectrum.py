@@ -32,8 +32,8 @@ class Spectrum:
         'DTGS': '#d82a2d'
     }
     SMOOTHING_WINDOW_RADIUS = {
-        'Si': 150,
-        'InGaAs': 150,
+        'Si': 20,
+        'InGaAs': 30,
         'DTGS': 150
     }
     SMOOTHING_POLY_ORDER = {
