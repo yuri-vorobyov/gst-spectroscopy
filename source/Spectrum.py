@@ -8,6 +8,11 @@ class Spectrum:
     """
     Spectrum is a collection of several individual spectra — obtained using different detectors at some particular
     sample temperature.
+
+    Water vapor has several absorption bands, according to literature: at 1.38, 1.87, 2.7, 6.3 um. In out experimental
+    spectra two of them contribute significantly:
+        1340 – 1495 nm
+        1785 – 1970 nm
     """
 
     WAVELENGTH_MIN = {
@@ -35,6 +40,10 @@ class Spectrum:
         'Si': 3,
         'InGaAs': 3,
         'DTGS': 3
+    }
+    WATER_BANDS = {
+        'A': (1340, 1495),
+        'B': (1785, 1970)
     }
 
     def __init__(self, Si='', InGaAs='', DTGS='', temperature='RT'):
