@@ -302,6 +302,25 @@ class Spectrum:
         elif detector == 'MIR':
             return self._raw_mir_data[:, 0]
 
+    def interpolate(self, data_kind='raw'):
+        """
+        Returns the interpolation function (result of interp1d).
+
+        :param data_kind: one of 'raw', 'smoothed'
+        """
+        # @todo currently only single-detector spectra are supported
+        if len(self.detectors) != 1:
+            raise Exception('Only single-detector spectra are supported currently.')
+
+        choose = {'VIS': {'raw': self._raw_vis_data, 'smoothed': self._smoothed_vis_data},
+                  'NIR': {'raw': self._raw_nir_data, 'smoothed': self._smoothed_nir_data},
+                  'MIR': {'raw': self._raw_mir_data, 'smoothed': self._smoothed_mir_data}}
+
+        d = choose[next(iter(self.detectors))][data_kind]
+        x, y = d[:, 0], d[:, 1]
+
+        return interp1d(x, y, kind='cubic')
+
 
 if __name__ == '__main__':
     s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
