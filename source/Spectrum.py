@@ -2,6 +2,59 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sg_smooth.smoothing import smSG_bisquare
 from scipy.interpolate import interp1d
+import os.path
+
+
+class RTPair:
+    """
+    Container for a pair of R and T spectra measured in one experiment using same detector.
+    """
+
+    CONVERSION_CONSTANT = 1e7
+
+    def __init__(self, R, T):
+        """
+        Parameters
+        ----------
+        R : str
+            File path to the R spectrum.
+        T : str
+            File path to the T spectrum.
+        """
+        # Check file existence.
+        if not os.path.exists(R):
+            raise Exception(f'"{R}" cannot be found!')
+        if not os.path.exists(T):
+            raise Exception(f'"{T}" cannot be found!')
+        # Load the data.
+        r = np.loadtxt(R, skiprows=1, dtype=np.float64)
+        t = np.loadtxt(T, skiprows=1, dtype=np.float64)
+        # Check is wavelength scale is the same.
+        if r[:, 0] != t[:, 0]:
+            raise Exception('Looks like R and T are from different data sets --- wavelength scales are different.')
+        # Convert to nm and save for latter use.
+        self.w = RTPair.CONVERSION_CONSTANT / r[:, 0]
+        self.R = r[:, 1]
+        self.T = t[:, 1]
+        # Also in the form of single array (should remain untouched).
+        self._data = np.column_stack((self.w, self.R, self.T))
+
+    def strip(self, wl_min, wl_max):
+        """
+        Strip the wavelength scale. It is the initial spectra which are getting stripped, so this method could be
+        invoked several times and will provide correct results.
+
+        Parameters
+        ----------
+        wl_min : float
+            Minimum wavelength in nm.
+        wl_max : float
+            Maximum wavelength in nm.
+        """
+        data = self._data[(self._data[:, 0] > wl_min) * (self._data[:, 0] < wl_max)]
+        self.w = data[:, 0]
+        self.R = data[:, 1]
+        self.T = data[:, 2]
 
 
 class Spectrum:
