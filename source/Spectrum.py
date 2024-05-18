@@ -36,7 +36,7 @@ class RTPair:
         if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
             raise Exception('Looks like R and T are from different data sets --- wavelength scales are different.')
         # Convert wavelength scale to nm and save for latter use.
-        self.w = 1e7 / r[:, 0]
+        self.w = 1e7 / ((r[:, 0] + t[:, 0]) / 2)
         self.R = r[:, 1]
         self.T = t[:, 1]
         # Also in the form of single array (original data --- should remain untouched).
