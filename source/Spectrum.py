@@ -32,9 +32,9 @@ class RTPair:
         # Load the data.
         r = np.loadtxt(R, skiprows=1, dtype=np.float64)
         t = np.loadtxt(T, skiprows=1, dtype=np.float64)
-        # Check is wavelength scale is the same.
+        # Check is wave-numbers scales are same.
         if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
-            raise Exception('Looks like R and T are from different data sets --- wavelength scales are different.')
+            raise Exception('Looks like R and T are from different data sets --- wave-number scales are different.')
         # Convert wavelength scale to nm and save for latter use.
         self.w = 1e7 / ((r[:, 0] + t[:, 0]) / 2)
         self.R = r[:, 1]
