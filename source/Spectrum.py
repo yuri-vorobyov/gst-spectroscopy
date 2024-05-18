@@ -7,7 +7,7 @@ import os.path
 
 class RTPair:
     """
-    Container for a pair of R and T spectra measured in one experiment using same detector.
+    Container for a pair of R and T spectra measured in one experiment using the same detector.
     """
 
     COLORS = {
@@ -39,7 +39,7 @@ class RTPair:
         self.w = 1e7 / r[:, 0]
         self.R = r[:, 1]
         self.T = t[:, 1]
-        # Also in the form of single array (should remain untouched).
+        # Also in the form of single array (original data --- should remain untouched).
         self._data = np.column_stack((self.w, self.R, self.T))
 
     @property
@@ -49,7 +49,7 @@ class RTPair:
     def strip(self, wl_min, wl_max):
         """
         Strip the wavelength scale. It is the initial spectra which are getting stripped, so this method could be
-        invoked several times and will provide correct results.
+        invoked several times and will still provide correct results.
 
         Parameters
         ----------
