@@ -41,10 +41,18 @@ class RTPair:
         self.T = t[:, 1]
         # Also in the form of single array (original data --- should remain untouched).
         self._data = np.column_stack((self.w, self.R, self.T))
+        # Smoothed version
+        self.sw = None
+        self.sR = None
+        self.sT = None
 
     @property
     def e(self):
         return 1239.842 / self.w
+
+    @property
+    def se(self):
+        return 1239.842 / self.sw
 
     def strip(self, wl_min, wl_max):
         """
@@ -62,6 +70,16 @@ class RTPair:
         self.w = data[:, 0]
         self.R = data[:, 1]
         self.T = data[:, 2]
+
+    def calc_smoothed(self, w, n):
+        """
+
+        Returns
+        -------
+
+        """
+        self.sw, self.sR, _ = smSG_bisquare(self.w, self.R, w, n, extend=False)
+        _, self.sT, _ = smSG_bisquare(self.w, self.T, w, n, extend=False)
 
     def plot(self, scale='wavelength', title=''):
         """
