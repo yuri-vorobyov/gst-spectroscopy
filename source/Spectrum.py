@@ -10,6 +10,10 @@ class RTPair:
     Container for a pair of R and T spectra measured in one experiment using same detector.
     """
 
+    COLORS = {
+        'R': '#1f77b5',
+        'T': '#fd8114'
+    }
 
     def __init__(self, R, T):
         """
@@ -58,6 +62,27 @@ class RTPair:
         self.w = data[:, 0]
         self.R = data[:, 1]
         self.T = data[:, 2]
+
+    def plot(self, title=''):
+        """
+        Plot the spectrum.
+        """
+        plt.style.use('style.mplstyle')
+        plt.rcParams['savefig.directory'] = '.'
+        fig, ax_T = plt.subplots(1, 1)
+        fig.canvas.manager.set_window_title(title)
+        ax_R = ax_T.twinx()
+        ax_T.set_title(title)
+        ax_T.set_xlabel('Photon energy (eV)')
+        ax_T.set_ylabel('T')
+        ax_R.set_ylabel('R')
+
+        l_t, = ax_T.plot(1239.842 / self.w, self.T, c=RTPair.COLORS['T'], alpha=0.7, label='T')
+        l_r, = ax_R.plot(1239.842 / self.w, self.R, c=RTPair.COLORS['R'], alpha=0.7, label='R')
+
+        ax_T.legend(handles=(l_t, l_r), loc='best')
+
+        plt.show(block=True)
 
 
 class Spectrum:
