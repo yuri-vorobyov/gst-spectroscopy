@@ -38,6 +38,10 @@ class RTPair:
         # Also in the form of single array (should remain untouched).
         self._data = np.column_stack((self.w, self.R, self.T))
 
+    @property
+    def e(self):
+        return 1239.842 / self.w
+
     def strip(self, wl_min, wl_max):
         """
         Strip the wavelength scale. It is the initial spectra which are getting stripped, so this method could be
