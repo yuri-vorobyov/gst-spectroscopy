@@ -10,7 +10,6 @@ class RTPair:
     Container for a pair of R and T spectra measured in one experiment using same detector.
     """
 
-    CONVERSION_CONSTANT = 1e7
 
     def __init__(self, R, T):
         """
@@ -32,8 +31,8 @@ class RTPair:
         # Check is wavelength scale is the same.
         if r[:, 0] != t[:, 0]:
             raise Exception('Looks like R and T are from different data sets --- wavelength scales are different.')
-        # Convert to nm and save for latter use.
-        self.w = RTPair.CONVERSION_CONSTANT / r[:, 0]
+        # Convert wavelength scale to nm and save for latter use.
+        self.w = 1e7 / r[:, 0]
         self.R = r[:, 1]
         self.T = t[:, 1]
         # Also in the form of single array (should remain untouched).
