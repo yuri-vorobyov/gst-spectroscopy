@@ -78,10 +78,14 @@ def calc_RT_AFSA(w, n_f, k_f, d_f, n_s, k_s, d_s):
     delta1 = 2 * pi / w * n1 * d1
     gamma1, a1 = delta1.real, -delta1.imag
     ea1 = np.exp(-a1)
+    ea1_2 = ea1**2
+    ea1_4 = ea1_2**2
 
     delta2 = 2 * pi / w * n2 * d2
     gamma2, a2 = delta2.real, -delta2.imag
     ea2 = np.exp(-a2)
+    ea2_2 = ea2**2
+    ea2_4 = ea2_2**2
 
     r01 = (n0 - n1) / (n0 + n1)
     g01, h01 = r01.real, r01.imag
@@ -100,18 +104,18 @@ def calc_RT_AFSA(w, n_f, k_f, d_f, n_s, k_s, d_s):
     C = 2 * (g01 * g12 - h01 * h12)
     D = 2 * (g01 * h12 + h01 * g12)
 
-    denom = 1 + ea1**2 * (ea1**2 * R01 * R12 + C * np.cos(2 * gamma1) + D * np.sin(2 * gamma1))
-    Denom = 1 - ea2**4 * R23 * (R12 + ea1**2 * (ea1**2 * R01 + A * np.cos(2 * gamma1) - B * np.sin(2 * gamma1))) / denom
+    denom = 1 + ea1_2 * (ea1_2 * R01 * R12 + C * np.cos(2 * gamma1) + D * np.sin(2 * gamma1))
+    Denom = 1 - ea2_4 * R23 * (R12 + ea1_2 * (ea1_2 * R01 + A * np.cos(2 * gamma1) - B * np.sin(2 * gamma1))) / denom
 
-    out_R = R23 * ea1**4 * ea2**4
+    out_R = R23 * ea1_4 * ea2_4
     out_R *= (1 - g01)**2 + h01**2
     out_R *= (1 - g12)**2 + h12**2
     out_R *= (1 + g01)**2 + h01**2
     out_R *= (1 + g12)**2 + h12**2
     out_R /= Denom * denom**2
-    out_R += (R01 + ea1**2 * (ea1**2 * R12 + A * np.cos(2 * gamma1) + B * np.sin(2 * gamma1))) / denom
+    out_R += (R01 + ea1_2 * (ea1_2 * R12 + A * np.cos(2 * gamma1) + B * np.sin(2 * gamma1))) / denom
 
-    out_T = n3 / n0 * ea1**2 * ea2**2 / (Denom * denom)
+    out_T = n3 / n0 * ea1_2 * ea2_2 / (Denom * denom)
     out_T *= (1 + g01)**2 + h01**2
     out_T *= (1 + g12)**2 + h12**2
     out_T *= (1 + g23)**2 + h23**2
