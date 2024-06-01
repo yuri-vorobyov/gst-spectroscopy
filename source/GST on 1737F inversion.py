@@ -73,10 +73,11 @@ def calc_T_and_R(gst_n, gst_k, substrate_n, substrate_k, wavelength_nm):
 
 
 def update_trial_matrix(substrate_n, substrate_k, wavelength_nm, t_meas, r_meas):
+    T_arr, R_arr = calc_T_and_R(n_trial, k_trial, substrate_n, substrate_k, wavelength_nm)
     for i in range(N_n):
         for j in range(N_k):
-            t_calc, r_calc = calc_T_and_R(n_trial[i, j], k_trial[i, j], substrate_n, substrate_k, wavelength_nm)
-            T_trial[i, j], R_trial[i, j] = t_calc - t_meas, r_calc - r_meas
+    #         t_calc, r_calc = calc_T_and_R(n_trial[i, j], k_trial[i, j], substrate_n, substrate_k, wavelength_nm)
+            T_trial[i, j], R_trial[i, j] = T_arr[i, j] - t_meas, R_arr[i, j] - r_meas
 
 
 # Calculate the solution contours. Effectively, `z` is passed by reference so change to corresponding array will
