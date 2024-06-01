@@ -50,11 +50,11 @@ if not np.allclose(rt.w, sub[:, 0], rtol=1e-6):
 print(f'{len(rt.w)} data points are loaded')
 
 # Thicknesses are known.
-d_gst = 104.7  # nm
+d_gst = 104.5  # nm
 d_sub = 0.7e-3 * 1e9  # nm
 
 # Limits of n and k for GST225 for graphical method.
-lim_n, lim_k = [-0.05, 5], [-0.05, 3]
+lim_n, lim_k = [-0.1, 5], [-0.1, 3]
 
 # Graphical method is implemented as follows. For each trial pair of values of n and k within the limits both
 # T_meas - T_calc and R_meas - R_calc. Therefore, here we need the scale of possible n and k values.
@@ -72,12 +72,11 @@ def calc_T_and_R(gst_n, gst_k, substrate_n, substrate_k, wavelength_nm):
     return t_calc, r_calc
 
 
-def update_trial_matrix(substrate_n, substrate_k, wavelength_nm, t_meas, r_meas):
-    T_arr, R_arr = calc_T_and_R(n_trial, k_trial, substrate_n, substrate_k, wavelength_nm)
+def update_trial_matrix(wavelength, sub_n, sub_k, measured_R, measured_T):
+    T_arr, R_arr = calc_T_and_R(n_trial, k_trial, sub_n, sub_k, wavelength)
     for i in range(N_n):
         for j in range(N_k):
-    #         t_calc, r_calc = calc_T_and_R(n_trial[i, j], k_trial[i, j], substrate_n, substrate_k, wavelength_nm)
-            T_trial[i, j], R_trial[i, j] = T_arr[i, j] - t_meas, R_arr[i, j] - r_meas
+            T_trial[i, j], R_trial[i, j] = T_arr[i, j] - measured_T, R_arr[i, j] - measured_R
 
 
 # Calculate the solution contours. Effectively, `z` is passed by reference so change to corresponding array will
@@ -86,9 +85,9 @@ cg_R = contourpy.contour_generator(n_trial, k_trial, R_trial, name='serial', lin
 cg_T = contourpy.contour_generator(n_trial, k_trial, T_trial, name='serial', line_type='Separate')
 
 # Check graphically.
-# index = 4100
+# index = 2000
 # print(f'{sub[index, 0]} nm')
-# update_trial_matrix(sub[index, 1], sub[index, 2], sub[index, 0], rt.T[index], rt.R[index])
+# update_trial_matrix(sub[index, 0], sub[index, 1], sub[index, 2], rt.R[index], rt.T[index])
 # plt.contour(n_trial, k_trial, R_trial, levels=[0], colors=COLORS[0])
 # plt.contour(n_trial, k_trial, T_trial, levels=[0], colors=COLORS[1])
 # plt.show()
@@ -99,9 +98,9 @@ all_roots = []
 for index, wl in enumerate(wavelengths):
     n_sub, k_sub = sub[index, 1], sub[index, 2]
     t_meas, r_meas = rt.T[index], rt.R[index]
-    print(f'solving for {wl:.1f} nm, n_sub = {n_sub:.3f}, k_sub = {k_sub:.3g}')
+    print(f'{index:>4} solving for {wl:.1f} nm, n_sub = {n_sub:.3f}, k_sub = {k_sub:.3g}')
 
-    update_trial_matrix(n_sub, k_sub, wl, t_meas, r_meas)
+    update_trial_matrix(wl, n_sub, k_sub, r_meas, t_meas)
 
     roots_R = cg_R.lines(0.0)  # list of contour parts
     roots_T = cg_T.lines(0.0)  # list of contour parts
@@ -131,9 +130,10 @@ for index, wl in enumerate(wavelengths):
             all_roots.append([wl, res.x[0], res.x[1]])
             print(res.x)
         else:
-            pass  # most probably false intersection (could be checked with finer grid)
+            pass  # most probably just false intersection (could be checked with finer grid)
             # raise Exception(f'Could not converge (index = {index}).')
 
+# Save all the roots to the text file.
 all_roots = np.array(all_roots)
 np.savetxt('roots.txt', all_roots)
 

@@ -6,10 +6,9 @@ Calculate n and k spectra of 1737F from its corresponding R&T spectra using root
 Spectrum of n is fitted by Sellmeier equation.
 """
 from Spectrum import Spectrum
-import tmm
 from calc import calc_RT_ASA
 import numpy as np
-from scipy.optimize import root, curve_fit, root_scalar
+from scipy.optimize import root, curve_fit
 from optical_constants.optical_constants import Sellmeier
 import matplotlib.pyplot as plt
 plt.style.use('style.mplstyle')
@@ -35,6 +34,7 @@ d_sub = 0.7e-3 * 1e9  # nm
 
 # NR root-finding is used to obtain n, k pairs for each wavelength.
 ns, ks = [], []
+x0 = [1.5, 1e-6]
 for w, r_meas, t_meas in zip(wavelengths, rt.R, rt.T):
     print(f'solve at {w:.1f} nm, R_meas = {r_meas:.3f}, T_meas = {t_meas:.3f}')
 
@@ -47,12 +47,12 @@ for w, r_meas, t_meas in zip(wavelengths, rt.R, rt.T):
 
 
     # Solution.
-    x0 = [1.5, 0]
     res = root(f, np.asarray(x0))
     if res.success:
         print(f'    {res.x}')
         ns.append(res.x[0])
         ks.append(res.x[1])
+        x0 = res.x
     else:
         raise Exception('Could not converge.')
 
