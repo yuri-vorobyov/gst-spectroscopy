@@ -14,6 +14,7 @@ import shapely
 import itertools
 import time
 from multiprocessing import Pool
+from calc import calc_RT_AFSA
 
 plt.style.use('style.mplstyle')
 plt.rcParams['savefig.directory'] = '.'
@@ -46,14 +47,11 @@ photon_energies = rt.e
 # Check that wavelength scale is the same for the GST sample and the substrate data.
 if not np.allclose(rt.w, sub[:, 0], rtol=1e-6):
     raise Exception('Wavelength scales are different!')
+print(f'{len(rt.w)} data points are loaded')
 
 # Thicknesses are known.
 d_gst = 104.7  # nm
 d_sub = 0.7e-3 * 1e9  # nm
-
-# Definitions for TMM.
-d_list = [np.inf, d_gst, d_sub, np.inf]
-c_list = ['i', 'c', 'i', 'i']
 
 # Limits of n and k for GST225 for graphical method.
 lim_n, lim_k = [-0.05, 5], [-0.05, 3]
@@ -70,9 +68,8 @@ R_trial = np.empty((N_n, N_k))
 
 def calc_T_and_R(gst_n, gst_k, substrate_n, substrate_k, wavelength_nm):
     """Calculate T and R (as a tuple) of GST on a substrate."""
-    n_list = [1, gst_n + 1j * gst_k, substrate_n + 1j * substrate_k, 1]
-    inc_tmm_data = tmm.inc_tmm('s', n_list, d_list, c_list, 0, wavelength_nm)
-    return inc_tmm_data['T'], inc_tmm_data['R']
+    r_calc, t_calc = calc_RT_AFSA(wavelength_nm, gst_n, gst_k, d_gst, substrate_n, substrate_k, d_sub)
+    return t_calc, r_calc
 
 
 def update_trial_matrix(substrate_n, substrate_k, wavelength_nm, t_meas, r_meas):
