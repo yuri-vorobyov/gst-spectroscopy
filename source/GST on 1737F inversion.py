@@ -5,15 +5,12 @@ Calculate n and k spectra of GST from R&T spectra of GST on 1737F sample provide
 Root-finding method is used.
 """
 from Spectrum import Spectrum
-import tmm
 import numpy as np
-from scipy.optimize import root, root_scalar
+from scipy.optimize import root
 import matplotlib.pyplot as plt
 import contourpy
 import shapely
 import itertools
-import time
-from multiprocessing import Pool
 from calc import calc_RT_AFSA
 
 plt.style.use('style.mplstyle')
@@ -124,8 +121,8 @@ for index, wl in enumerate(wavelengths):
         return t_calc - t_meas, r_calc - r_meas
 
     # Polish roots found with the graphical method with NR
-    for i in range(len(roots)):
-        res = root(f, np.asarray(roots[i]))
+    for root_index in range(len(roots)):
+        res = root(f, np.asarray(roots[root_index]))
         if res.success:
             all_roots.append([wl, res.x[0], res.x[1]])
             print(res.x)
