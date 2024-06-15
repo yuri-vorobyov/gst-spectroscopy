@@ -5,7 +5,20 @@ from scipy.interpolate import interp1d
 import os.path
 
 
-class RTPair:
+class RTPairBase:
+
+    def __init__(self, w, R, T):
+        # Check correctness.
+        if not (len(w) == len(R) == len(T)):
+            raise Exception('Input arrays lengths must be equal.')
+
+        # Save data.
+        self.w = w
+        self.R = R
+        self.T = T
+
+
+class RTPair(RTPairBase):
     """
     Container for a pair of R and T spectra measured in one experiment using the same detector.
     """
@@ -15,7 +28,22 @@ class RTPair:
         'T': '#fd8114'
     }
 
-    def __init__(self, R, T):
+    DETECTORS = {
+        'Si': {
+            'type': 'VIS',
+            'limits': (630, 900)
+        },
+        'CaF2 MCT': {
+            'type': 'NIR',
+            'limits': (910, 2500)  # limited by 1737F substrate
+        },
+        'InGaAs': {
+            'type': 'NIR',
+            'limits': (840, 2400)
+        }
+    }
+
+    def __init__(self, R, T, detector=None):
         """
         Parameters
         ----------
@@ -23,24 +51,33 @@ class RTPair:
             File path to the R spectrum.
         T : str
             File path to the T spectrum.
+        detector : str or None
+            Detector type which was used for the spectra acquisition.
         """
         # Check file existence.
         if not os.path.exists(R):
             raise Exception(f'"{R}" cannot be found!')
         if not os.path.exists(T):
             raise Exception(f'"{T}" cannot be found!')
+        # Check if the detector type provided is supported.
+        if detector:
+            if detector not in RTPair.DETECTORS.keys():
+                raise Exception(f'"{detector}" detector is not supported.')
         # Load the data.
         r = np.loadtxt(R, skiprows=1, dtype=np.float64)
         t = np.loadtxt(T, skiprows=1, dtype=np.float64)
-        # Check is wave-numbers scales are same.
+        # Check is wave-number scales equal to each other.
         if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
             raise Exception('Looks like R and T are from different data sets --- wave-number scales are different.')
-        # Convert wavelength scale to nm and save for latter use.
-        self.w = 1e7 / ((r[:, 0] + t[:, 0]) / 2)
-        self.R = r[:, 1]
-        self.T = t[:, 1]
+        # Save input data.
+        super().__init__(1e7 / ((r[:, 0] + t[:, 0]) / 2),
+                         r[:, 1],
+                         t[:, 1])
         # Also in the form of single array (original data --- should remain untouched).
         self._data = np.column_stack((self.w, self.R, self.T))
+        # Strip according to detector limits.
+        if detector:
+            self.strip(*RTPair.DETECTORS[detector]['limits'])
         # Smoothed version
         self.sw = None
         self.sR = None
@@ -73,6 +110,14 @@ class RTPair:
 
     def calc_smoothed(self, w, n):
         """
+        Calculate (update) filtered spectra.
+
+        Parameters
+        ----------
+        w : int
+            Radius of smoothing window (number of points).
+        n : int
+            Order of approximating polynomial.
 
         Returns
         -------
@@ -121,93 +166,117 @@ class Spectrum:
     sample temperature.
 
     Water vapor has several absorption bands, according to literature: at 1.38, 1.87, 2.7, 6.3 um. In out experimental
-    spectra two of them contribute significantly:
+    spectra first three contribute significantly:
         1340 – 1495 nm
         1785 – 1970 nm
+        2500 – 2900 nm
     """
 
+    PRINT_HEADER = False
+    AUTO_SMOOTH = False
+    AUTO_CORRECT = False
     WAVELENGTH_MIN = {
-        'Si': 630,  # nm
-        'InGaAs': 850,  # nm
-        'DTGS': 1350  # nm
+        'VIS': 630,  # nm
+        'NIR': 910,  # nm, for CaF2 MCT
+        'MIR': 1350  # nm
     }
     WAVELENGTH_MAX = {
-        'Si': 1160,  # nm
-        'InGaAs': 2450,  # nm
-        'DTGS': 6650  # nm
+        'VIS': 1160,  # nm
+        'NIR': 2500,  # nm, for CaF2 MCT, limited by 1737F substrate
+        'MIR': 6650  # nm
     }
-    PRINT_HEADER = False
     COLORS = {
-        'Si': '#1f77b5',
-        'InGaAs': '#fd8114',
-        'DTGS': '#d82a2d'
+        'R': '#1f77b5',
+        'T': '#fd8114',
     }
     SMOOTHING_WINDOW_RADIUS = {
-        'Si': 20,
-        'InGaAs': 30,
-        'DTGS': 150
+        'VIS': 20,
+        'NIR': 30,
+        'MIR': 150
     }
     SMOOTHING_POLY_ORDER = {
-        'Si': 3,
-        'InGaAs': 3,
-        'DTGS': 3
+        'VIS': 3,
+        'NIR': 3,
+        'MIR': 3
     }
     WATER_BANDS = {
         'A': (1340, 1495),
-        'B': (1785, 1970)
+        'B': (1785, 1970),
+        'C': (2500, 2900)
     }
 
-    def __init__(self, Si='', InGaAs='', DTGS='', temperature='RT'):
+    def __init__(self, VIS_R='', VIS_T='', VIS_detector='',
+                       NIR_R='', NIR_T='', NIR_detector='',
+                       MIR_R='', MIR_T='', MIR_detector='',
+                       temperature='RT'):
         """
-        Create a Spectrum instance, composed of up to three spectra obtained using different detectors.
+        Parameters
+        ----------
+        VIS_R : str
+            Filepath to the R spectrum obtained by VIS detector.
+        VIS_T : str
+            Filepath to the T spectrum obtained by VIS detector.
+        VIS_detector : str
+            VIS detector type.
+        NIR_R : str
+            Filepath to the R spectrum obtained by NIR detector.
+        NIR_T : str
+            Filepath to the T spectrum obtained by NIR detector.
+        NIR_detector : str
+            NIM detector type.
+        MIR_R : str
+            Filepath to the R spectrum obtained by MIR detector.
+        MIR_T : str
+            Filepath to the T spectrum obtained by MIR detector.
+        MIR_detector : str
+            MIR detector type.
+        temperature : numeric or 'RT'
+            Temperature of sample when the spectrum was measured.
+        """
 
-        :param Si: Filename for the data from Si (VIS) detector.
-        :param InGaAs: Filename for the data from InGaAs (NIR) detector.
-        :param DTGS: Filename for the data from DTGS (MIR) detector.
-        :param temperature: Value of temperature (in K) at which the spectra were collected, or 'RT'.
-        """
+        # Check for consistency --- R and T spectra should be provided in pairs.
+        if (bool(VIS_R) != bool(VIS_T)) or (bool(NIR_R) != bool(NIR_T)) or (bool(MIR_R) != bool(MIR_T)):
+            raise Exception('R and T spectra go in pairs! Check input arguments.')
+
         # If necessary to do so, print headers to make sure there is no error in locating files.
         if Spectrum.PRINT_HEADER:
-            if Si:
-                print(f'VIS: {Spectrum.__file_header(Si)}')
-            if InGaAs:
-                print(f'NIR: {Spectrum.__file_header(InGaAs)}')
-            if DTGS:
-                print(f'MIR: {Spectrum.__file_header(DTGS)}')
+            if VIS_R:
+                print(f'VIS R: {Spectrum.__file_header(VIS_R)}')
+            if VIS_T:
+                print(f'VIS T: {Spectrum.__file_header(VIS_T)}')
+            if NIR_R:
+                print(f'NIR R: {Spectrum.__file_header(NIR_R)}')
+            if NIR_T:
+                print(f'NIR T: {Spectrum.__file_header(NIR_T)}')
+            if MIR_R:
+                print(f'MIR R: {Spectrum.__file_header(MIR_R)}')
+            if MIR_T:
+                print(f'MIR T: {Spectrum.__file_header(MIR_T)}')
 
-        # Initialize instance variables.
-        self._raw_vis_data = None
-        self._raw_nir_data = None
-        self._raw_mir_data = None
-        self._smoothed_vis_data = None
-        self._smoothed_nir_data = None
-        self._smoothed_mir_data = None
-        self.__corrected_nir_data = None
-        self.__corrected_mir_data = None
+        # Containers for spectra data.
+        self.VIS = None
+        self.NIR = None
+        self.MIR = None
+        self.FULL = None
+
         self.detectors = set()
 
         # Load raw data, convert it to the internal representation and save for later use
-        if Si:
+        if VIS_R:
             self.detectors.add('VIS')
-            data = np.loadtxt(Si, skiprows=1, dtype=np.float64)
-            data = Spectrum.__convert_to_nm(data)
-            self._raw_vis_data = Spectrum.__strip_wl(data, 'Si')
-        if InGaAs:
+            self.VIS = RTPair(R=VIS_R, T=VIS_T, detector=VIS_detector)
+        if NIR_R:
             self.detectors.add('NIR')
-            data = np.loadtxt(InGaAs, skiprows=1, dtype=np.float64)
-            data = Spectrum.__convert_to_nm(data)
-            self._raw_nir_data = Spectrum.__strip_wl(data, 'InGaAs')
-        if DTGS:
+            self.NIR = RTPair(R=NIR_R, T=NIR_T, detector=NIR_detector)
+        if MIR_R:
             self.detectors.add('MIR')
-            data = np.loadtxt(DTGS, skiprows=1, dtype=np.float64)
-            data = Spectrum.__convert_to_nm(data)
-            self._raw_mir_data = Spectrum.__strip_wl(data, 'DTGS')
+            self.MIR = RTPair(R=MIR_R, T=MIR_T, detector=MIR_detector)
 
         # Save value of temperature
         self.temperature = temperature
 
-        # self.__calculate_smoothed()
-        # self.__calculate_corrected(kind='linear')
+        if Spectrum.AUTO_CORRECT:
+            self.calculate_corrected(kind='linear')
 
     @staticmethod
     def __assert_detector(detector):
@@ -218,61 +287,71 @@ class Spectrum:
         if detector not in self.detectors:
             raise Exception(f'No data provided for {detector}, only {self.detectors} are given.')
 
-    @staticmethod
-    def __plot(data_vis, data_nir, data_mir, signal='Signal', title=''):
+    def plot(self, spectra='raw', title=''):
         """
-        Plot the spectrum.
+        Plot full spectrum: both R and T for all provided detectors.
 
-        :param data_vis: A VIS spectrum in the table form (1st column for wavelength in nm, 2nd — for signal intensity).
-        :param data_nir: A NIR spectrum in the table form (1st column for wavelength in nm, 2nd — for signal intensity).
-        :param data_mir: A MIR spectrum in the table form (1st column for wavelength in nm, 2nd — for signal intensity).
-        :param signal: Label of the vertical axis.
-        :param title: Plot title.
+        Parameters
+        ----------
+        spectra : str
+            What data to plot. One of "raw", "smoothed", "stitched".
+        title : str
+            Optional title for the figure.
         """
+        if spectra not in {'raw', 'smoothed', 'stitched'}:
+            raise Exception('`spectra` should be "raw", or "smoothed", or "stitched".')
+
         plt.style.use('style.mplstyle')
         plt.rcParams['savefig.directory'] = '.'
-        fig, ax = plt.subplots(1, 1)
+        fig, ax_T = plt.subplots(1, 1)
+        ax_R = ax_T.twinx()
         fig.canvas.manager.set_window_title(title)
-        ax.set_title(title)
-        ax.set_xlabel(r'Wavelength (nm)')
-        ax.set_ylabel(signal)
+        ax_T.set_title(title)
+        ax_T.set_xlabel('Wavelength (nm)')
+        ax_T.set_ylabel('T')
+        ax_R.set_ylabel('R')
 
-        if data_vis is not None:
-            ax.plot(data_vis[:, 0], data_vis[:, 1], c=Spectrum.COLORS['Si'], alpha=0.7)
-        if data_nir is not None:
-            ax.plot(data_nir[:, 0], data_nir[:, 1], c=Spectrum.COLORS['InGaAs'], alpha=0.7)
-        if data_mir is not None:
-            ax.plot(data_mir[:, 0], data_mir[:, 1], c=Spectrum.COLORS['DTGS'], alpha=0.7)
+        kwargs = dict(alpha=0.65, lw=1.4)
 
+        if spectra == 'stitched':
+            ax_T.plot(self.FULL.w, self.FULL.T, c=Spectrum.COLORS['T'], **kwargs)
+            ax_R.plot(self.FULL.w, self.FULL.R, c=Spectrum.COLORS['R'], **kwargs)
+            plt.show(block=True)
+            return
+
+        legend_t, legend_r = [], []
+        if self.VIS is not None:
+            if spectra == 'raw':
+                x, t, r = self.VIS.w, self.VIS.T, self.VIS.R
+            else:
+                x, t, r = self.VIS.sw, self.VIS.sT, self.VIS.sR
+            vis_t, = ax_T.plot(x, t, c=Spectrum.COLORS['T'], **kwargs)
+            vis_r, = ax_R.plot(x, r, c=Spectrum.COLORS['R'], **kwargs)
+            legend_t.append(vis_t)
+            legend_r.append(vis_r)
+        if self.NIR is not None:
+            if spectra == 'raw':
+                x, t, r = self.NIR.w, self.NIR.T, self.NIR.R
+            else:
+                x, t, r = self.NIR.sw, self.NIR.sT, self.NIR.sR
+            nir_t, = ax_T.plot(x, t, c=Spectrum.COLORS['T'], **kwargs)
+            nir_r, = ax_R.plot(x, r, c=Spectrum.COLORS['R'], **kwargs)
+            legend_t.append(nir_t)
+            legend_r.append(nir_r)
+        if self.MIR is not None:
+            if spectra == 'raw':
+                x, t, r = self.MIR.w, self.MIR.T, self.MIR.R
+            else:
+                x, t, r = self.MIR.sw, self.MIR.sT, self.MIR.sR
+            mir_t, = ax_T.plot(x, t, c=Spectrum.COLORS['T'], **kwargs)
+            mir_r, = ax_R.plot(x, r, c=Spectrum.COLORS['R'], **kwargs)
+            legend_t.append(mir_t)
+            legend_r.append(mir_r)
+
+        legend_t = tuple(legend_t)
+        legend_r = tuple(legend_r)
+        ax_T.legend([legend_t, legend_r], ['T', 'R'])
         plt.show(block=True)
-
-    def plot_raw(self, signal='Signal', title=''):
-        """Show the plot of raw spectra data."""
-        Spectrum.__plot(self._raw_vis_data, self._raw_nir_data, self._raw_mir_data,
-                        signal, title)
-
-    def plot_smoothed(self, signal='Signal', title=''):
-        """Show the plot of smoothed spectra data."""
-        Spectrum.__plot(self._smoothed_vis_data, self._smoothed_nir_data, self._smoothed_mir_data,
-                        signal, title)
-
-    def plot_corrected(self, signal='Signal', title=''):
-        """Show the plot of corrected spectra data."""
-        vis, nir, mir = None, None, None
-        if 'VIS' in self.detectors:
-            vis = self._raw_vis_data
-        if 'NIR' in self.detectors:
-            if self.__corrected_nir_data is not None:
-                nir = self.__corrected_nir_data
-            else:
-                nir = self._raw_nir_data
-        if 'MIR' in self.detectors:
-            if self.__corrected_mir_data is not None:
-                mir = self.__corrected_mir_data
-            else:
-                mir = self._raw_mir_data
-
-        Spectrum.__plot(vis, nir, mir, signal, title)
 
     @staticmethod
     def __file_header(fname):
@@ -281,159 +360,138 @@ class Spectrum:
             return fs.readline().rstrip()
 
     @staticmethod
-    def __convert_to_nm(data):
+    def __correct(left_x, left_y, right_x, right_y, kind='uniform'):
         """
-        Converts the input spectrum from wave-numbers scale (in cm^-1) to wavelength scale (in nm).
-
-        :param data: Spectrum soon to be converted.
-        :return: Converted spectrum.
-        """
-        data[:, 0] = 1e7 / data[:, 0]  # convert from cm^-1 to nm
-        return data
-
-    @staticmethod
-    def __strip_wl(data, detector):
-        """
-        Returns the part of the input spectrum residing in between the detector limits.
-
-        :param data: Spectrum to be stripped.
-        :param detector: 'Si', or 'InGaAs', or 'DTGS'.
-        :return: Stripped spectrum
-        """
-        min_wl, max_wl = Spectrum.WAVELENGTH_MIN[detector], Spectrum.WAVELENGTH_MAX[detector]
-        data = data[(data[:, 0] > min_wl) * (data[:, 0] < max_wl)]
-        return data
-
-    def _calculate_smoothed(self):
-        if self._raw_vis_data is not None:
-            self._smoothed_vis_data = np.column_stack(smSG_bisquare(self._raw_vis_data[:, 0],
-                                                                    self._raw_vis_data[:, 1],
-                                                                    Spectrum.SMOOTHING_WINDOW_RADIUS['Si'],
-                                                                    Spectrum.SMOOTHING_POLY_ORDER['Si'],
-                                                                    extend=False))
-        if self._raw_nir_data is not None:
-            self._smoothed_nir_data = np.column_stack(smSG_bisquare(self._raw_nir_data[:, 0],
-                                                                    self._raw_nir_data[:, 1],
-                                                                    Spectrum.SMOOTHING_WINDOW_RADIUS['InGaAs'],
-                                                                    Spectrum.SMOOTHING_POLY_ORDER['InGaAs'],
-                                                                    extend=False))
-        if self._raw_mir_data is not None:
-            self._smoothed_mir_data = np.column_stack(smSG_bisquare(self._raw_mir_data[:, 0],
-                                                                     self._raw_mir_data[:, 1],
-                                                                    Spectrum.SMOOTHING_WINDOW_RADIUS['DTGS'],
-                                                                    Spectrum.SMOOTHING_POLY_ORDER['DTGS'],
-                                                                    extend=False))
-
-    def _calculate_corrected(self, kind='uniform'):
-        # Check for correctness.
-        if self.detectors == {'VIS', 'MIR'}:
-            raise Exception('Cannot stitch VIS with MIR.')
-        if len(self.detectors) == 1:
-            raise Exception('Only one spectrum is provided — nothing to stitch.')
-
-        # Perform stitching for two-detector case.
-        if len(self.detectors) == 2:
-            # Alias those two spectra.
-            if self.detectors == {'VIS', 'NIR'}:
-                left, right = self._raw_vis_data, np.copy(self._raw_nir_data)
-                left_sm, right_sm = self._smoothed_vis_data, self._smoothed_nir_data
-            else:
-                left, right = self._raw_nir_data, np.copy(self._raw_mir_data)
-                left_sm, right_sm = self._smoothed_nir_data, self._smoothed_mir_data
-
-            # Interpolate for the same set of wavelengths.
-            w0, w1 = right_sm[0, 0], left_sm[-1, 0]
-            N = 500
-            w = np.linspace(w0 + 1, w1 - 1, N)
-            f = interp1d(left_sm[left_sm[:, 0] >= w0, 0],
-                         left_sm[left_sm[:, 0] >= w0, 1],
-                         'cubic', assume_sorted=True)(w)
-            g = interp1d(right_sm[right_sm[:, 0] <= w1, 0],
-                         right_sm[right_sm[:, 0] <= w1, 1],
-                         'cubic', assume_sorted=True)(w)
-
-            # Correct right spectrum.
-            A = (g * g).sum()
-            D = (f * g).sum()
-            if kind == 'uniform':
-                b = D / A
-                right[:, 1] = right[:, 1] * b
-            else:
-                B = (w * g * g).sum()
-                C = (w * w * g * g).sum()
-                E = (w * f * g).sum()
-                a0 = (C * D - E * B) / (C * A - B * B)
-                a1 = (E * A - D * B) / (C * A - B * B)
-                right[:, 1] = (a0 + a1 * right[:, 0]) * right[:, 1]
-
-            # And save it.
-            if self.detectors == {'VIS', 'NIR'}:
-                self.__corrected_nir_data = right
-            else:
-                self.__corrected_mir_data = right
-
-    @property
-    def min_wl(self):
-        if 'VIS' in self.detectors:
-            return self._raw_vis_data[0, 0]
-        elif 'NIR' in self.detectors:
-            return self._raw_nir_data[0, 0]
-        else:
-            return self._raw_mir_data[0, 0]
-
-    @property
-    def max_wl(self):
-        if 'MIR' in self.detectors:
-            return self._raw_mir_data[-1, 0]
-        elif 'NIR' in self.detectors:
-            return self._raw_nir_data[-1, 0]
-        else:
-            return self._raw_vis_data[-1, 0]
-
-    def get_wavelengths(self, detector):
-        """
-        Returns the wavelength vector for the specified detector.
+        Calculate corrected spectrum.
 
         Parameters
         ----------
-        detector : str
-            Data corresponding to which detector should be returned.
+        left_x, left_y : array-like
+            Left, standard, spectrum.
+        right_x, right_y: array-like
+            Right, to be corrected, spectrum.
+        kind : str
+            Type of correction algorithm.
 
         Returns
         -------
-        out : ndarray
-            Wavelength vector.
+        dict
+            Corrected version of the right_y spectrum together with the stitched spectrum.
         """
-        Spectrum.__assert_detector(detector)
-        self.__assert_detector_in_use(detector)
-        if detector == 'VIS':
-            return self._raw_vis_data[:, 0]
-        elif detector == 'NIR':
-            return self._raw_nir_data[:, 0]
-        elif detector == 'MIR':
-            return self._raw_mir_data[:, 0]
+        # Interpolate for the same set of wavelengths.
+        w0, w1 = right_x[0], left_x[-1]
+        # Find all the points within those limits.
+        ii_left, ii_right = left_x >= w0, right_x <= w1
+        wl_left, wl_right = left_x[ii_left], right_x[ii_right]
+        # Interpolation points are taken from the part with the lesser number of points (improve performance a bit). In
+        # principle, one may use any vector `w`, however, in the general case two calls to interpolation function are
+        # needed.
+        if len(wl_left) < len(wl_right):
+            w, f = wl_left, left_y[ii_left]
+            g = interp1d(wl_right, right_y[ii_right], 'cubic', assume_sorted=True)(wl_left)
+        else:
+            w, g = wl_right, right_y[ii_right]
+            f = interp1d(wl_left, left_y[ii_left], 'cubic', assume_sorted=True)(wl_right)
 
-    def interpolate(self, data_kind='raw'):
+        # Calculate corrected version of the right spectrum.
+        A = (g * g).sum()
+        D = (f * g).sum()
+        if kind == 'uniform':
+            b = D / A
+            right_y_corr = right_y * b
+            g_corr = g * b  # for transition region computation
+        else:
+            B = (w * g * g).sum()
+            C = (w * w * g * g).sum()
+            E = (w * f * g).sum()
+            a0 = (C * D - E * B) / (C * A - B * B)
+            a1 = (E * A - D * B) / (C * A - B * B)
+            right_y_corr = (a0 + a1 * right_x) * right_y
+            g_corr = (a0 + a1 * right_x) * g  # for transition region computation
+
+        # Calculate transition region for the same wavelength points `w`. Again, it is not necessary to use the same set
+        # of wavelengths here --- using `w` just leads to slightly faster calculation speed.
+        tr = np.linspace(1.0, 0.0, len(w)) * f + \
+             np.linspace(0.0, 1.0, len(w)) * g_corr
+
+        # Finally, assemble the stitched spectrum.
+        ii_left, ii_right = left_x < w0, right_x > w1
+        stitched_x = np.concatenate((left_x[ii_left], w, right_x[ii_right]))
+        stitched_y = np.concatenate((left_y[ii_left], tr, right_y_corr[ii_right]))
+
+        return dict(right_y_corr=right_y_corr, stitched_x=stitched_x, stitched_y=stitched_y)
+
+    def calculate_corrected(self, kind='uniform'):
+        # Check for correctness.
+        if self.detectors == {'VIS', 'MIR'}:
+            raise Exception('Cannot MIR using VIS --- NIR is needed.')
+        if len(self.detectors) == 1:
+            raise Exception('Only one spectrum is provided — nothing to correct.')
+
+        # Perform correction for two-detector case.
+        if len(self.detectors) == 2:
+            # Alias those two spectra.
+            if self.detectors == {'VIS', 'NIR'}:
+                left, right = self.VIS, self.NIR
+            else:
+                left, right = self.NIR, self.MIR
+
+            # Calculate corrected spectra.
+            R_corr = Spectrum.__correct(left.w, left.R, right.w, right.R, kind)
+            T_corr = Spectrum.__correct(left.w, left.T, right.w, right.T, kind)
+            right.R = R_corr['right_y_corr']
+            right.T = T_corr['right_y_corr']
+            self.FULL = RTPairBase(R_corr['stitched_x'], R_corr['stitched_y'], T_corr['stitched_y'])
+
+    def stitched(self, num_points=1000):
         """
-        Returns the interpolation function (result of interp1d).
+        Calculates stitched spectrum. Resulting spectrum is obtained using interpolation.
 
-        :param data_kind: one of 'raw', 'smoothed'
+        Parameters
+        ----------
+        num_points : int
+            Number of points in the resulting spectrum.
+
+        Returns
+        -------
+        RTPair
+            Stitched spectrum.
         """
-        # @todo currently only single-detector spectra are supported
-        if len(self.detectors) != 1:
-            raise Exception('Only single-detector spectra are supported currently.')
+        # Perform stitching for two-detector case.
+        if len(self.detectors) == 2:
+            # Check for correctness.
+            if self.detectors == {'VIS', 'MIR'}:
+                raise Exception('Cannot MIR using VIS --- NIR is needed.')
+            if len(self.detectors) == 1:
+                raise Exception('Only one spectrum is provided — nothing to correct.')
+            # Alias those two spectra.
+            if self.detectors == {'VIS', 'NIR'}:
+                left, right = self.VIS, self.NIR
+            else:
+                left, right = self.NIR, self.MIR
+            # Figure out transition region limits.
+            w0, w1 = right.w[0], left.w[-1]
+        else:
+            raise Exception(f'Only 2-detector spectra could be stitched.')
 
-        choose = {'VIS': {'raw': self._raw_vis_data, 'smoothed': self._smoothed_vis_data},
-                  'NIR': {'raw': self._raw_nir_data, 'smoothed': self._smoothed_nir_data},
-                  'MIR': {'raw': self._raw_mir_data, 'smoothed': self._smoothed_mir_data}}
+    @property
+    def min_wl(self):
+        if self.VIS is not None:
+            return self.VIS.w[0]
+        elif self.NIR is not None:
+            return self.NIR.w[0]
+        elif self.MIR is not None:
+            return self.MIR.w[0]
+        else:
+            raise Exception('No data provided!')
 
-        d = choose[next(iter(self.detectors))][data_kind]
-        x, y = d[:, 0], d[:, 1]
-
-        return interp1d(x, y, kind='cubic')
-
-
-if __name__ == '__main__':
-    s = Spectrum(InGaAs='../data/2024-04-16/1000nm/R/R_270c3(GST_1000nm)_VIS_InGaAs_CaF2.csv',
-                 DTGS='../data/2024-04-16/1000nm/R/R_270c3_(GST_1000nm)_DTGS_MIR_CaF2.csv')
-    s.plot_corrected(signal='R', title='2024-04-16')
+    @property
+    def max_wl(self):
+        if self.MIR is not None:
+            return self.MIR.w[-1]
+        elif self.NIR is not None:
+            return self.NIR.w[-1]
+        elif self.VIS is not None:
+            return self.VIS.w[-1]
+        else:
+            raise Exception('No data provided!')
