@@ -5,20 +5,7 @@ from scipy.interpolate import interp1d
 import os.path
 
 
-class RTPairBase:
-
-    def __init__(self, w, R, T):
-        # Check correctness.
-        if not (len(w) == len(R) == len(T)):
-            raise Exception('Input arrays lengths must be equal.')
-
-        # Save data.
-        self.w = w
-        self.R = R
-        self.T = T
-
-
-class RTPair(RTPairBase):
+class RTPair:
     """
     Container for a pair of R and T spectra measured in one experiment using the same detector.
     """
@@ -43,8 +30,48 @@ class RTPair(RTPairBase):
         }
     }
 
-    def __init__(self, R, T, detector=None):
+    def __init__(self, w, R, T, detector=None):
         """
+        Parameters
+        ----------
+        w : array-like
+            Array of wavelengths in nanometers.
+        R : array_like
+            Reflectance spectra.
+        T : array_like
+            Transmittance spectra.
+        detector : str or None
+            Detector type which was used for the spectra acquisition.
+        """
+        # Check correctness of input arrays.
+        if not (len(w) == len(R) == len(T)):
+            raise Exception('Input arrays lengths must be equal.')
+        # Check if the detector type provided is supported.
+        if detector:
+            if detector not in RTPair.DETECTORS.keys():
+                raise Exception(f'"{detector}" detector is not supported.')
+
+        # Save data.
+        self.w = w
+        self.R = R
+        self.T = T
+
+        # Also in the form of single array (original data --- should remain untouched).
+        self._data = np.column_stack((self.w, self.R, self.T))
+
+        # Strip according to detector limits.
+        if detector:
+            self.strip(*RTPair.DETECTORS[detector]['limits'])
+
+        # Smoothed version
+        self.sw = None
+        self.sR = None
+        self.sT = None
+
+    @classmethod
+    def from_files(cls, R, T, detector=None):
+        """
+        Factory method to instantiate `RTPair` from text files with the spectra.
         Parameters
         ----------
         R : str
@@ -59,10 +86,6 @@ class RTPair(RTPairBase):
             raise Exception(f'"{R}" cannot be found!')
         if not os.path.exists(T):
             raise Exception(f'"{T}" cannot be found!')
-        # Check if the detector type provided is supported.
-        if detector:
-            if detector not in RTPair.DETECTORS.keys():
-                raise Exception(f'"{detector}" detector is not supported.')
         # Load the data.
         r = np.loadtxt(R, skiprows=1, dtype=np.float64)
         t = np.loadtxt(T, skiprows=1, dtype=np.float64)
@@ -70,18 +93,7 @@ class RTPair(RTPairBase):
         if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
             raise Exception('Looks like R and T are from different data sets --- wave-number scales are different.')
         # Save input data.
-        super().__init__(1e7 / ((r[:, 0] + t[:, 0]) / 2),
-                         r[:, 1],
-                         t[:, 1])
-        # Also in the form of single array (original data --- should remain untouched).
-        self._data = np.column_stack((self.w, self.R, self.T))
-        # Strip according to detector limits.
-        if detector:
-            self.strip(*RTPair.DETECTORS[detector]['limits'])
-        # Smoothed version
-        self.sw = None
-        self.sR = None
-        self.sT = None
+        return cls(1e7 / ((r[:, 0] + t[:, 0]) / 2), r[:, 1], t[:, 1], detector)
 
     @property
     def e(self):
@@ -264,13 +276,13 @@ class Spectrum:
         # Load raw data, convert it to the internal representation and save for later use
         if VIS_R:
             self.detectors.add('VIS')
-            self.VIS = RTPair(R=VIS_R, T=VIS_T, detector=VIS_detector)
+            self.VIS = RTPair.from_files(VIS_R, VIS_T, VIS_detector)
         if NIR_R:
             self.detectors.add('NIR')
-            self.NIR = RTPair(R=NIR_R, T=NIR_T, detector=NIR_detector)
+            self.NIR = RTPair.from_files(NIR_R, NIR_T, NIR_detector)
         if MIR_R:
             self.detectors.add('MIR')
-            self.MIR = RTPair(R=MIR_R, T=MIR_T, detector=MIR_detector)
+            self.MIR = RTPair.from_files(MIR_R, MIR_T, MIR_detector)
 
         # Save value of temperature
         self.temperature = temperature
@@ -441,7 +453,7 @@ class Spectrum:
             T_corr = Spectrum.__correct(left.w, left.T, right.w, right.T, kind)
             right.R = R_corr['right_y_corr']
             right.T = T_corr['right_y_corr']
-            self.FULL = RTPairBase(R_corr['stitched_x'], R_corr['stitched_y'], T_corr['stitched_y'])
+            self.FULL = RTPair(R_corr['stitched_x'], R_corr['stitched_y'], T_corr['stitched_y'])
 
     def stitched(self, num_points=1000):
         """
