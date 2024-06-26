@@ -164,8 +164,8 @@ class RTPair:
         ax_R.set_ylabel('R')
 
         x = {'wavelength': self.w, 'energy': self.e}[scale]
-        l_t, = ax_T.plot(x, self.T, c=RTPair.COLORS['T'], alpha=0.7, label='T')
-        l_r, = ax_R.plot(x, self.R, c=RTPair.COLORS['R'], alpha=0.7, label='R')
+        l_t, = ax_T.plot(x, self.T, c=RTPair.COLORS['T'], alpha=0.9, label='T')
+        l_r, = ax_R.plot(x, self.R, c=RTPair.COLORS['R'], alpha=0.9, label='R')
 
         ax_T.legend(handles=(l_t, l_r), loc='best')
 
