@@ -18,7 +18,7 @@ class RTPair:
     DETECTORS = {
         'Si': {
             'type': 'VIS',
-            'limits': (630, 900)
+            'limits': (600, 925)
         },
         'CaF2 MCT': {
             'type': 'NIR',
