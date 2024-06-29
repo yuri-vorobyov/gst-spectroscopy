@@ -35,12 +35,12 @@ rt = meas.FULL
 wavelengths = rt.w
 photon_energies = rt.e
 
-# Thickness is known.
+# Substrate thickness is known.
 d_sub = 0.7e-3 * 1e9  # nm
 
 # NR root-finding is used to obtain n, k pairs for each wavelength.
-ns, ks = [], []
-x0 = [1.5, 1e-6]
+ns, ks = [], []  # containers for n and k values
+x0 = [1.5, 0]  # initial guess [n, k]
 for w, r_meas, t_meas in zip(wavelengths, rt.R, rt.T):
     print(f'solve at {w:.1f} nm, R_meas = {r_meas:.3f}, T_meas = {t_meas:.3f}')
 
