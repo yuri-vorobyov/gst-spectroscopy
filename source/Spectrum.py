@@ -96,9 +96,13 @@ class RTPair:
         # Load the data.
         r = np.loadtxt(R, skiprows=1, dtype=np.float64)
         t = np.loadtxt(T, skiprows=1, dtype=np.float64)
-        # Check is wave-number scales equal to each other.
-        if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
-            raise Exception('Looks like R and T are from different data sets --- wave-number scales are different.')
+        # Check whether wave-number scales equal to each other.
+        if len(r[:, 0]) == len(t[:, 0]):
+            if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
+                raise Exception(f'Looks like "{R}" and "{T}" are from different data sets --- wave-number scales'
+                                 'are different.')
+        else:
+            raise Exception(f'\n"{R}" : {len(r[:, 0])} points\n"{T}" : {len(t[:, 0])} points')
         # Instantiate RTPair.
         return cls(1e7 / ((r[:, 0] + t[:, 0]) / 2), r[:, 1], t[:, 1], detector)
 
