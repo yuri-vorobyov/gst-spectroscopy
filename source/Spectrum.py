@@ -8,13 +8,17 @@ import os.path
 class RTPair:
     """
     Container for a pair of R and T spectra measured in one experiment using the same detector.
+    Both R and T are from 0 to 1, and wavelength scale is in nm.
+    This container optionally handles information about the detector which was used for spectra acquisition.
     """
 
+    # Each spectrum has its default color for built-in plots.
     COLORS = {
-        'R': '#1f77b5',
-        'T': '#fd8114'
+        'R': '#1f77b5',  # blue-ish
+        'T': '#fd8114'   # red-ish
     }
 
+    # Each detector has its own spectrum interval
     DETECTORS = {
         'Si': {
             'type': 'VIS',
@@ -36,9 +40,9 @@ class RTPair:
         ----------
         w : array-like
             Array of wavelengths in nanometers.
-        R : array_like
+        R : array-like
             Reflectance spectra.
-        T : array_like
+        T : array-like
             Transmittance spectra.
         detector : str or None
             Detector type which was used for the spectra acquisition.
@@ -46,6 +50,7 @@ class RTPair:
         # Check correctness of input arrays.
         if not (len(w) == len(R) == len(T)):
             raise Exception('Input arrays lengths must be equal.')
+
         # Check if the detector type provided is supported.
         if detector:
             if detector not in RTPair.DETECTORS.keys():
@@ -63,7 +68,7 @@ class RTPair:
         if detector:
             self.strip(*RTPair.DETECTORS[detector]['limits'])
 
-        # Smoothed version
+        # Placeholders for the smoothed version.
         self.sw = None
         self.sR = None
         self.sT = None
@@ -72,6 +77,7 @@ class RTPair:
     def from_files(cls, R, T, detector=None):
         """
         Factory method to instantiate `RTPair` from text files with the spectra.
+
         Parameters
         ----------
         R : str
@@ -79,7 +85,8 @@ class RTPair:
         T : str
             File path to the T spectrum.
         detector : str or None
-            Detector type which was used for the spectra acquisition.
+            Detector type which was used for the spectra acquisition. Default is `None` meaning that no information
+            about detector is available.
         """
         # Check file existence.
         if not os.path.exists(R):
@@ -92,11 +99,12 @@ class RTPair:
         # Check is wave-number scales equal to each other.
         if not np.allclose(r[:, 0], t[:, 0], rtol=1e-6):
             raise Exception('Looks like R and T are from different data sets --- wave-number scales are different.')
-        # Save input data.
+        # Instantiate RTPair.
         return cls(1e7 / ((r[:, 0] + t[:, 0]) / 2), r[:, 1], t[:, 1], detector)
 
     @property
     def e(self):
+        """Return photon energy scale for this spectrum."""
         return 1239.842 / self.w
 
     @property
@@ -105,7 +113,7 @@ class RTPair:
 
     def strip(self, wl_min, wl_max):
         """
-        Strip the wavelength scale. It is the initial spectra which are getting stripped, so this method could be
+        Strip the wavelength scale. It is the raw input spectra which are getting stripped, so this method could be
         invoked several times and will still provide correct results.
 
         Parameters
@@ -130,10 +138,6 @@ class RTPair:
             Radius of smoothing window (number of points).
         n : int
             Order of approximating polynomial.
-
-        Returns
-        -------
-
         """
         self.sw, self.sR, _ = smSG_bisquare(self.w, self.R, w, n, extend=False)
         _, self.sT, _ = smSG_bisquare(self.w, self.T, w, n, extend=False)
@@ -273,7 +277,7 @@ class Spectrum:
 
         self.detectors = set()
 
-        # Load raw data, convert it to the internal representation and save for later use
+        # Load raw data, convert it to the internal representation and save for later use.
         if VIS_R:
             self.detectors.add('VIS')
             self.VIS = RTPair.from_files(VIS_R, VIS_T, VIS_detector)
@@ -436,7 +440,7 @@ class Spectrum:
     def calculate_corrected(self, kind='uniform'):
         # Check for correctness.
         if self.detectors == {'VIS', 'MIR'}:
-            raise Exception('Cannot MIR using VIS --- NIR is needed.')
+            raise Exception('Cannot correct MIR using VIS --- NIR is needed.')
         if len(self.detectors) == 1:
             raise Exception('Only one spectrum is provided — nothing to correct.')
 
@@ -481,7 +485,7 @@ class Spectrum:
                 left, right = self.VIS, self.NIR
             else:
                 left, right = self.NIR, self.MIR
-            # Figure out transition region limits.
+            # Figure out the transition region limits.
             w0, w1 = right.w[0], left.w[-1]
         else:
             raise Exception(f'Only 2-detector spectra could be stitched.')
