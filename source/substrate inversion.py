@@ -1,9 +1,9 @@
 """
 substrate inversion.py
 
-Calculate n and k spectra of 1737F from its corresponding R&T spectra using root-finding method.
+Calculate n and k spectra of substrate sample from its corresponding R&T spectra using root-finding method.
 
-Spectrum of n is fitted by Sellmeier equation.
+Interference is neglected.
 """
 from Spectrum import Spectrum
 from calc import calc_RT_ASA
