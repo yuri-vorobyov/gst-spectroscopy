@@ -57,6 +57,7 @@ class RTPair:
                 raise Exception(f'"{detector}" detector is not supported.')
 
         # Save data.
+        self.detector = detector
         self.w = w
         self.R = R
         self.T = T
@@ -131,6 +132,13 @@ class RTPair:
         self.w = data[:, 0]
         self.R = data[:, 1]
         self.T = data[:, 2]
+
+    def strip_by_detector(self):
+        """ Strip the wavelength scale using the specified detector limits. """
+        if self.detector:
+            self.strip(*RTPair.DETECTORS[self.detector]['limits'])
+        else:
+            raise Exception('Detector is not specified. Use `RTPair.strip()` instead.')
 
     def calc_smoothed(self, w, n):
         """
