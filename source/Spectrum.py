@@ -387,6 +387,13 @@ class Spectrum:
         with open(fname, mode='r', encoding='utf8') as fs:
             return fs.readline().rstrip()
 
+    def __assert_stitchability(self):
+        """Check if this instance support stitching operation."""
+        if self.detectors == {'VIS', 'MIR'}:
+            raise Exception('Cannot stitch MIR with VIS --- NIR is needed in between.')
+        if len(self.detectors) == 1:
+            raise Exception('Only one spectrum is provided — nothing to stitch.')
+
     @staticmethod
     def __correct(left_x, left_y, right_x, right_y, kind='uniform'):
         """
@@ -450,11 +457,7 @@ class Spectrum:
         return dict(right_y_corr=right_y_corr, stitched_x=stitched_x, stitched_y=stitched_y)
 
     def calculate_corrected(self, kind='uniform'):
-        # Check for correctness.
-        if self.detectors == {'VIS', 'MIR'}:
-            raise Exception('Cannot correct MIR using VIS --- NIR is needed.')
-        if len(self.detectors) == 1:
-            raise Exception('Only one spectrum is provided — nothing to correct.')
+        self.__assert_stitchability()
 
         # Perform correction for two-detector case.
         if len(self.detectors) == 2:
@@ -487,11 +490,7 @@ class Spectrum:
         """
         # Perform stitching for two-detector case.
         if len(self.detectors) == 2:
-            # Check for correctness.
-            if self.detectors == {'VIS', 'MIR'}:
-                raise Exception('Cannot MIR using VIS --- NIR is needed.')
-            if len(self.detectors) == 1:
-                raise Exception('Only one spectrum is provided — nothing to correct.')
+            self.__assert_stitchability()
             # Alias those two spectra.
             if self.detectors == {'VIS', 'NIR'}:
                 left, right = self.VIS, self.NIR
