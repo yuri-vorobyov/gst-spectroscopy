@@ -5,7 +5,7 @@ Calculate n and k spectra of substrate sample from its corresponding R&T spectra
 
 Interference is neglected.
 """
-from Spectrum import Spectrum
+from Spectrum import Spectrum, RTPair
 from calc import calc_RT_ASA
 import numpy as np
 from scipy.optimize import root, curve_fit
@@ -16,16 +16,22 @@ plt.rcParams['savefig.directory'] = '.'
 COLORS = [item['color'] for item in plt.rcParams['axes.prop_cycle'].__dict__['_left']]
 
 
-# Load substrate spectra.
-meas = Spectrum(VIS_T='../data/2024-04-02/1737F/T/T_glass_Si.csv',
-                VIS_R='../data/2024-04-02/1737F/R/R_glass_Si.csv',
-                NIR_T='../data/2024-04-02/1737F/T/T_glass_InGaAs.csv',
-                NIR_R='../data/2024-04-02/1737F/R/R_glass_InGaAs.csv',
-                MIR_T='../data/2024-04-02/1737F/T/T_glass_DTGS_MIR.csv',
-                MIR_R='../data/2024-04-02/1737F/R/R_glass_DTGS_MIR.csv')
+# From FTIR (Vertex)
+meas = Spectrum(VIS_T='../data/2024-04-02/1737F/T_glass_Si.csv',
+                VIS_R='../data/2024-04-02/1737F/R_glass_Si.csv',
+                VIS_detector='Si',
+                NIR_T='../data/2024-04-02/1737F/T_glass_InGaAs.csv',
+                NIR_R='../data/2024-04-02/1737F/R_glass_InGaAs.csv',
+                NIR_detector='InGaAs')
+meas.calculate_corrected(kind='uniform')
+rt = meas.FULL
 
-# Get the wavelength scale and the energy scale.
-rt = meas.NIR
+# From spectrophotometry
+# data = np.loadtxt('../data/Spectrophotometry/Corning Glass.csv', skiprows=2)
+# rt = RTPair(data[:, 0], data[:, 2] / 100, data[:, 1] / 100)
+# rt.strip(400, 2500)
+
+# rt.plot()  # just to check if data was loaded correctly
 wavelengths = rt.w
 photon_energies = rt.e
 
