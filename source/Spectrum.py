@@ -74,7 +74,7 @@ class RTPair:
         self.sT = None
 
     @classmethod
-    def from_files(cls, R, T, detector=None):
+    def from_ftir_files(cls, R, T, detector=None):
         """
         Factory method to instantiate `RTPair` from text files with the spectra.
 
@@ -280,13 +280,13 @@ class Spectrum:
         # Load raw data, convert it to the internal representation and save for later use.
         if VIS_R:
             self.detectors.add('VIS')
-            self.VIS = RTPair.from_files(VIS_R, VIS_T, VIS_detector)
+            self.VIS = RTPair.from_ftir_files(VIS_R, VIS_T, VIS_detector)
         if NIR_R:
             self.detectors.add('NIR')
-            self.NIR = RTPair.from_files(NIR_R, NIR_T, NIR_detector)
+            self.NIR = RTPair.from_ftir_files(NIR_R, NIR_T, NIR_detector)
         if MIR_R:
             self.detectors.add('MIR')
-            self.MIR = RTPair.from_files(MIR_R, MIR_T, MIR_detector)
+            self.MIR = RTPair.from_ftir_files(MIR_R, MIR_T, MIR_detector)
 
         # Save value of temperature
         self.temperature = temperature
