@@ -19,6 +19,7 @@ def calc_RT_ASA(w, n, k, d):
     d :
         Substrate thickness.
 
+    Any unit of length could be used, but it should be the same for wavelength and substrate thickness.
 
     Returns
     -------
@@ -129,6 +130,6 @@ if __name__ == '__main__':
     R, T = 0, 0
     N = 50
     for i in range(N**2):
-        R, T = calc_RT_AFSA(1000e-9, 3.5, 1.5, 104.7e-9, 1.5, 1e-4, 0.7e-3)
+        R, T = calc_RT_AFSA(1000e-9, np.array([3.5, 3.6, 3.7]), np.array([1.5, 1.4, 1.3]), 104.7e-9, 1.5, 1e-4, 0.7e-3)
     t1 = time.time()
     print(f'R = {R}, T = {T}, calculated in {(t1 - t0) / N**2 * 1e6:.1f} us')
