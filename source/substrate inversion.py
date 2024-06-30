@@ -8,8 +8,7 @@ Interference is neglected.
 from Spectrum import Spectrum, RTPair
 from calc import calc_RT_ASA
 import numpy as np
-from scipy.optimize import root, curve_fit
-from optical_constants.optical_constants import Sellmeier
+from scipy.optimize import root
 import matplotlib.pyplot as plt
 plt.style.use('style.mplstyle')
 plt.rcParams['savefig.directory'] = '.'
@@ -33,7 +32,6 @@ rt = meas.FULL
 
 # rt.plot()  # just to check if data was loaded correctly
 wavelengths = rt.w
-photon_energies = rt.e
 
 # Substrate thickness is known.
 d_sub = 0.7e-3 * 1e9  # nm
@@ -63,17 +61,6 @@ for w, r_meas, t_meas in zip(wavelengths, rt.R, rt.T):
         raise Exception('Could not converge.')
 
 
-# Next, to avoid introducing extra noise down the line, we approximate n by Sellmeier equation.
-def f(wl, B1, B2, B3, C1, C2, C3):
-    dispersion = Sellmeier(B1, B2, B3, C1, C2, C3)
-    return dispersion.n(1239.842 / wl)
-
-
-p0 = [2.9e-1, 9.8e-1, 3.7e+1, 1.0e-2, 1.0e-2, 6.4e+3]
-popt, pcov = curve_fit(f, wavelengths, ns, p0 )
-disp = Sellmeier(*popt)
-
-
 # Create figure.
 fig, ax_n = plt.subplots(1, 1, constrained_layout=True)
 ax_k = ax_n.twinx()
@@ -85,9 +72,9 @@ ax_n.set_ylabel(r'n')
 ax_k.set_ylabel(r'k')
 
 # Plot n and k.
-l_n, = ax_n.plot(wavelengths, ns, c=COLORS[0], label='n')
-ax_n.plot(wavelengths, f(wavelengths, *popt), c=COLORS[2])
-l_k, = ax_k.plot(wavelengths, ks, c=COLORS[1], label='k')
+kwargs = dict(lw=1.4, alpha=0.65)
+l_n, = ax_n.plot(wavelengths, ns, c=COLORS[0], label='n', **kwargs)
+l_k, = ax_k.plot(wavelengths, ks, c=COLORS[1], label='k', **kwargs)
 
 # Create legend.
 ax_n.legend(handles=[l_n, l_k], loc='upper center')
@@ -99,4 +86,5 @@ ax_n.set_title('1737F')
 plt.show()
 
 # Finally, save the n and k for latter use.
-np.savetxt('1737F.txt', np.column_stack((wavelengths, ns, ks)))
+np.savetxt('substrate (w,n,k).txt', np.column_stack((wavelengths, ns, ks)))
+print('saved')
