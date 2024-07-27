@@ -21,11 +21,11 @@ COLORS = [item['color'] for item in plt.rcParams['axes.prop_cycle'].__dict__['_l
 np.set_printoptions(precision=4)
 
 # From FTIR (Vertex, 02.04.2024)
-meas = Spectrum(VIS_T='../data/2024-04-02/130nm/T_254c(GST225_130nm)_Si.csv',
-                VIS_R='../data/2024-04-02/130nm/R_254c(GST225_130nm)_Si.csv',
+meas = Spectrum(VIS_T='../test data/T_254c(GST225_130nm)_Si.csv',
+                VIS_R='../test data/R_254c(GST225_130nm)_Si.csv',
                 VIS_detector='Si',
-                NIR_T='../data/2024-04-02/130nm/T_254c(GST225_130nm)_InGaAs.csv',
-                NIR_R='../data/2024-04-02/130nm/R_254c(GST225_130nm)_InGaAs.csv',
+                NIR_T='../test data/T_254c(GST225_130nm)_InGaAs.csv',
+                NIR_R='../test data/R_254c(GST225_130nm)_InGaAs.csv',
                 NIR_detector='InGaAs')
 meas.calculate_corrected(kind='uniform')
 rt = meas.FULL
