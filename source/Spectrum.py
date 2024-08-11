@@ -258,7 +258,7 @@ class Spectrum:
             a0 = (C * D - E * B) / (C * A - B * B)
             a1 = (E * A - D * B) / (C * A - B * B)
             right_y_corr = (a0 + a1 * right_x) * right_y
-            g_corr = (a0 + a1 * right_x) * g  # for transition region computation
+            g_corr = (a0 + a1 * w) * g  # for transition region computation
 
         # Calculate transition region for the same wavelength points `w`. Again, it is not necessary to use the same set
         # of wavelengths here --- using `w` just leads to slightly faster calculation speed.
