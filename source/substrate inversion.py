@@ -6,6 +6,7 @@ Calculate n and k spectra of substrate sample from its corresponding R&T spectra
 Interference is neglected.
 """
 from Spectrum import Spectrum, RTPair
+from OpticalConstantsSpectrum import OpticalConstantsSpectrum as OCS
 from calc import calc_RT_ASA
 import numpy as np
 from scipy.optimize import root
@@ -18,11 +19,12 @@ COLORS = [item['color'] for item in plt.rcParams['axes.prop_cycle'].__dict__['_l
 # From FTIR (Vertex, 02.04.2024)
 meas = Spectrum(VIS_T='../test data/T_glass_Si.csv',
                 VIS_R='../test data/R_glass_Si.csv',
-                VIS_detector='Si',
+                VIS_detector='Vertex-Si',
                 NIR_T='../test data/T_glass_InGaAs.csv',
                 NIR_R='../test data/R_glass_InGaAs.csv',
-                NIR_detector='InGaAs')
+                NIR_detector='Vertex-InGaAs')
 meas.calculate_corrected(kind='uniform')
+# meas.plot(), quit()  # uncomment to check if everything is correct
 rt = meas.FULL
 
 # From spectrophotometry
@@ -61,30 +63,9 @@ for w, r_meas, t_meas in zip(wavelengths, rt.R, rt.T):
         raise Exception('Could not converge.')
 
 
-# Create figure.
-fig, ax_n = plt.subplots(1, 1, constrained_layout=True)
-ax_k = ax_n.twinx()
-fig.canvas.manager.set_window_title('figure')
-
-# Configure axes.
-ax_n.set_xlabel(r'Wavelength (nm)')
-ax_n.set_ylabel(r'n')
-ax_k.set_ylabel(r'k')
-
-# Plot n and k.
-kwargs = dict(lw=1.4, alpha=0.65)
-l_n, = ax_n.plot(wavelengths, ns, c=COLORS[0], label='n', **kwargs)
-l_k, = ax_k.plot(wavelengths, ks, c=COLORS[1], label='k', **kwargs)
-
-# Create legend.
-ax_n.legend(handles=[l_n, l_k], loc='upper center')
-
-# Show the title.
-ax_n.set_title('1737F')
-
-# Show the window.
-plt.show()
+ocs = OCS(wavelengths, ns, ks)
+ocs.plot()
 
 # Finally, save the n and k for latter use.
-np.savetxt('substrate (w,n,k).txt', np.column_stack((wavelengths, ns, ks)))
+ocs.save('substrate (w,n,k).txt')
 print('saved')
