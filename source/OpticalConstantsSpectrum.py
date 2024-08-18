@@ -87,3 +87,14 @@ class OpticalConstantsSpectrum:
             ax.plot(self.e, (alpha * self.e)**0.5, '.', ms=4, c=OpticalConstantsSpectrum.COLORS['k'], alpha=0.7)
 
         plt.show(block=True)
+
+    def save(self, fname):
+        """
+        Save the optical constants spectrum to a wnk text file.
+
+        Parameters
+        ----------
+        fname : str
+            File name.
+        """
+        np.savetxt(fname, self._data)
