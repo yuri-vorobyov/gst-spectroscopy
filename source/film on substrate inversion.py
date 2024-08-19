@@ -6,6 +6,7 @@ Calculate n and k spectra of a thin film from R&T spectra provided the substrate
 Root-finding method is used.
 """
 from Spectrum import Spectrum, RTPair
+from OpticalConstantsSpectrum import OpticalConstantsSpectrum as OCS
 import numpy as np
 from scipy.optimize import root
 import matplotlib.pyplot as plt
@@ -135,25 +136,6 @@ for index, wl in enumerate(wavelengths):
 all_roots = np.array(all_roots)
 np.savetxt('roots.txt', all_roots)
 
-# Create figure.
-fig, ax_n = plt.subplots(1, 1, constrained_layout=True)
-ax_k = ax_n.twinx()
-fig.canvas.manager.set_window_title('figure')
-
-# Configure axes.
-ax_n.set_xlabel(r'Wavelength (nm)')
-ax_n.set_ylabel(r'n')
-ax_k.set_ylabel(r'k')
-
-# Plot n and k.
-l_n, = ax_n.plot(all_roots[:, 0], all_roots[:, 1], '.', ms=7, mec='none', c=COLORS[0], alpha=0.9, label='n')
-l_k, = ax_k.plot(all_roots[:, 0], all_roots[:, 2], '.', ms=7, mec='none', c=COLORS[1], alpha=0.9, label='k')
-
-# Create legend.
-ax_n.legend(handles=[l_n, l_k], loc='center right')
-
-# Show the title.
-ax_n.set_title('GST')
-
-# Show the window.
-plt.show()
+nk = OCS(all_roots[:, 0], all_roots[:, 1], all_roots[:, 2])
+nk.plot(scale='nk')
+# nk.plot(scale='Tauc')
