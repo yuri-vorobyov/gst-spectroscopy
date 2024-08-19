@@ -20,7 +20,7 @@ class RTPair:
 
     # Each detector has its own spectrum interval
     DETECTORS = {
-        'Si': {
+        'Hyperion Si': {
             'type': 'VIS',
             'limits': (600, 1085)
         },
@@ -28,7 +28,7 @@ class RTPair:
             'type': 'VIS',
             'limits': (600, 890)
         },
-        'CaF2 MCT': {
+        'Hyperion CaF2 MCT': {
             'type': 'NIR',
             'limits': (950, 2500)  # limited by 1737F substrate
         },
