@@ -130,7 +130,9 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     plt.style.use('style.mplstyle')
 
-    data = np.loadtxt('roots.txt')  # roots are (w, n, k) tuples
+    fname = 'roots 80.txt'
+
+    data = np.loadtxt(fname)  # roots are (w, n, k) tuples
 
     fig, ax = plt.subplots()
     pts = ax.scatter(data[:, 1], data[:, 2], s=20)
@@ -141,11 +143,11 @@ if __name__ == '__main__':
 
     print('Draw a line around the points you want to remove.\nThey will be marked.\nRepeat if necessary.\nUse zoom '
           'and pan tools for precision, but don\'t forget to disable them afterwards.\n"Enter" key saves points which '
-          'were not selected to "roots.txt".')
+          'were not selected back to the original file.')
 
     def accept(event):
         if event.key == "enter":
-            np.savetxt('roots.txt', data[selector.unselected()])
+            np.savetxt(fname, data[selector.unselected()])
             print('saved!')
 
     fig.canvas.mpl_connect("key_press_event", accept)
