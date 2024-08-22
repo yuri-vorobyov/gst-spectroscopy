@@ -39,9 +39,14 @@ class OpticalConstantsSpectrum:
         return cls(data[:, 0], data[:, 1], data[:, 2])
 
     @property
-    def e(self):
+    def energy(self):
         """Return photon energy scale for this spectrum in eV."""
         return 1239.842 / self.w
+
+    @property
+    def alpha(self):
+        """Return absorption spectrum in m^-1."""
+        return 4 * np.pi * self.k / self.w
 
     def plot(self, scale='wavelength', title=''):
         """
@@ -70,7 +75,7 @@ class OpticalConstantsSpectrum:
                              'energy': 'Photon energy (eV)'}[scale])
             ax_n.set_ylabel('n')
             ax_k.set_ylabel('k')
-            x = {'wavelength': self.w, 'energy': self.e}[scale]
+            x = {'wavelength': self.w, 'energy': self.energy}[scale]
             kwargs = dict(mec='none', ms=4, alpha=0.7, linestyle='None', marker='.')
             l_n, = ax_n.plot(x, self.n, c=OpticalConstantsSpectrum.COLORS['n'], label='n', **kwargs)
             l_k, = ax_k.plot(x, self.k, c=OpticalConstantsSpectrum.COLORS['k'], label='k', **kwargs)
@@ -84,8 +89,8 @@ class OpticalConstantsSpectrum:
             ax.set_title(title)
             ax.set_xlabel(r'Photon energy (eV)')
             ax.set_ylabel(r'$ \mathbf{\mathrm{\left(\alpha E\right)^{1/2}\,(cm^{-1})}} $')
-            alpha = 4 * np.pi * self.k / self.w * 1e7
-            ax.plot(self.e, (alpha * self.e)**0.5, '.', ms=4, c=OpticalConstantsSpectrum.COLORS['k'], alpha=0.7)
+            kwargs = dict(ms=4, c=OpticalConstantsSpectrum.COLORS['k'], alpha=0.7)
+            ax.plot(self.energy, (self.alpha * self.energy)**0.5, '.', **kwargs)
 
         plt.show(block=True)
 
