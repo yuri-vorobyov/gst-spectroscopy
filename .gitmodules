@@ -3,4 +3,4 @@
 	url = https://github.com/yuri-vorobyov/sg-smooth.git
 [submodule "source/optical_constants"]
 	path = source/optical_constants
-	url = C:\\Users\\Yuri\\Documents\\MEGA\\Projects\\dev\\optical-constants
+	url = https://github.com/yuri-vorobyov/optical-constants.git
