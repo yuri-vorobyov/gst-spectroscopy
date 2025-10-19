@@ -52,7 +52,7 @@ d_sub = 0.7e-3 * 1e9  # nm
 
 # Graphical method is implemented as follows. For each trial pair of values of n and k within the limits both
 # T_meas - T_calc and R_meas - R_calc. Therefore, here we need the scale of possible n and k values.
-lim_n, lim_k = [-0.2, 6], [-0.2, 3]
+lim_n, lim_k = [-0.2, 6.0], [-0.2, 3.0]
 N_n, N_k = 30, 15
 n_trial, k_trial = np.meshgrid(np.linspace(lim_n[0], lim_n[1], N_n),
                                np.linspace(lim_k[0], lim_k[1], N_k),

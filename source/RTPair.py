@@ -15,7 +15,7 @@ class RTPair:
     # Each spectrum has its default color for built-in plots.
     COLORS = {
         'R': '#1f77b5',  # blue-ish
-        'T': '#fd8114'   # red-ish
+        'T': '#fd8114'  # red-ish
     }
 
     # Each detector has its own spectrum interval
