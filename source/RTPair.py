@@ -59,16 +59,19 @@ class RTPair:
         if not (len(w) == len(R) == len(T)):
             raise Exception('Input arrays lengths must be equal.')
 
-        # Check if the detector type provided is supported.
+        # Ensure spectra are sorted by the wavelength.
+        ii = np.argsort(w)
+        self.w = w[ii]
+        self.R = R[ii]
+        self.T = T[ii]
+
+        # Check if the detector type provided is supported. Information about the detector is optional.
         if detector:
             if detector not in RTPair.DETECTORS.keys():
                 raise Exception(f'"{detector}" detector is not supported.')
 
         # Save data.
         self.detector = detector
-        self.w = w
-        self.R = R
-        self.T = T
 
         # Also in the form of single array (original data --- should remain untouched).
         self._data = np.column_stack((self.w, self.R, self.T))
@@ -112,8 +115,6 @@ class RTPair:
         t = np.loadtxt(T, skiprows=1, dtype=np.float64)
         if len(t.shape) != 2 or t.shape[1] != 2:
             raise Exception('T dataset must have 2 columns.')
-        # Ensure spectra are sorted.
-        # todo : make it happen
         # Check scale of the spectra and resample if needed.
         if same_scale:
             # Check whether wave-number scales equal to each other.
