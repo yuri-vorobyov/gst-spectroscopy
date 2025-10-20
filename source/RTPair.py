@@ -65,6 +65,12 @@ class RTPair:
         self.R = R[ii]
         self.T = T[ii]
 
+        # Remove negative R&T values.
+        ii = (self.R > 0) * (self.T > 0)
+        self.w = self.w[ii]
+        self.R = self.R[ii]
+        self.T = self.T[ii]
+
         # Check if the detector type provided is supported. Information about the detector is optional.
         if detector:
             if detector not in RTPair.DETECTORS.keys():
