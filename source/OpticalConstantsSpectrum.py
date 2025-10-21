@@ -92,7 +92,10 @@ class OpticalConstantsSpectrum:
             kwargs = dict(ms=4, c=OpticalConstantsSpectrum.COLORS['k'], alpha=0.7)
             ax.plot(self.energy, (self.alpha * self.energy)**0.5, '.', **kwargs)
 
-        plt.show(block=True)
+        return ax
+
+    def show(self):
+        plt.show()
 
     def save(self, fname):
         """
