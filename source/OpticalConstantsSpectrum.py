@@ -76,10 +76,9 @@ class OpticalConstantsSpectrum:
             ax_n.set_ylabel('n')
             ax_k.set_ylabel('k')
             x = {'wavelength': self.w, 'energy': self.energy}[scale]
-            kwargs = dict(mec='none', ms=4, alpha=0.7, linestyle='None', marker='.')
-            l_n, = ax_n.plot(x, self.n, c=OpticalConstantsSpectrum.COLORS['n'], label='n', **kwargs)
-            l_k, = ax_k.plot(x, self.k, c=OpticalConstantsSpectrum.COLORS['k'], label='k', **kwargs)
-            ax_n.legend(handles=(l_n, l_k), loc='best')
+            l_n, = ax_n.plot(x, self.n, c=OpticalConstantsSpectrum.COLORS['n'], label='n')
+            l_k, = ax_k.plot(x, self.k, c=OpticalConstantsSpectrum.COLORS['k'], label='k')
+            ax_k.legend(handles=(l_n, l_k), loc='best')
         elif scale == 'nk':
             ax.set_title(title)
             ax.set_xlabel('n')

@@ -27,9 +27,12 @@ ytick.direction              : in
 ytick.major.width            : 1
 ytick.major.pad              : 3.0
 ytick.labelsize              : 9
+legend.facecolor             : white
 legend.framealpha            : 1.0
 legend.fontsize              : 9
-legend.frameon               : False
+legend.frameon               : True
+legend.fancybox              : True
+legend.shadow                : False
 savefig.format               : svg
 savefig.bbox                 : tight
 # need to add some padding because otherwise the page may crop axes line a bit (half-thickness)
