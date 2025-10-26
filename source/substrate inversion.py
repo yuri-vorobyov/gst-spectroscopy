@@ -31,6 +31,7 @@ R_FILENAME = 'R_Glass_clean(1737f).csv'
 T_FILENAME = 'T_Glass_clean(1737f).csv'
 rt = RTPair.from_ftir_files(DATA_DIR / R_FILENAME, DATA_DIR / T_FILENAME)
 rt.strip(0, 4000)
+rt.resample()
 
 wavelengths = rt.w
 
