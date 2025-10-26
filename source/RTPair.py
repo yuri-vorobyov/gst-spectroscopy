@@ -184,6 +184,20 @@ class RTPair:
         else:
             raise Exception('Detector is not specified. Use `RTPair.strip()` instead.')
 
+    def resample(self, step=None):
+        """
+        Resample the spectrum using uniform step.
+        """
+        # The `step` is allowed to be inferred from the data. It is the maximum separation between
+        # data points.
+        if step is None:
+            step = (self.w[1:] - self.w[:-1]).max()
+
+        scale = np.linspace(self.w[0], self.w[-1], int((self.w[-1] - self.w[0]) / step))
+        self.R = interp1d(self.w, self.R, kind='linear')(scale)
+        self.T = interp1d(self.w, self.T, kind='linear')(scale)
+        self.w = scale
+
     def calc_smoothed(self, w, n):
         """
         Calculate (update) filtered spectra.
