@@ -1,47 +1,35 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import os.path
+from pathlib import Path
+from SpectrumPair import SpectrumPair
 
 
-class OpticalConstantsSpectrum:
-
-    # Each spectrum has its default color for built-in plots.
-    COLORS = {
-        'n': '#1f77b5',  # blue-ish
-        'k': '#fd8114'   # red-ish
-    }
+class OpticalConstantsSpectrum(SpectrumPair):
 
     def __init__(self, w, n, k):
-        # Check correctness of input arrays.
-        if not (len(w) == len(n) == len(k)):
-            raise Exception('Input arrays lengths must be equal.')
-
-        # Save data.
-        self.w = w  # in nm
-        self.n = n
-        self.k = k
-
-        # Also in the form of single array (original data --- should remain untouched).
-        self._data = np.column_stack((self.w, self.n, self.k))
+        super().__init__(w, n, k, 'n', 'k')
 
     @classmethod
     def from_wnk_file(cls, fname):
         # Check file existence.
-        if not os.path.exists(fname):
+        if not Path(fname).is_file():
             raise Exception(f'"{fname}" cannot be found!')
+
         # Load the data.
         data = np.loadtxt(fname, skiprows=0, dtype=np.float64)
         if len(data.shape) != 2 or data.shape[1] != 3:
             raise Exception('Dataset must have 3 columns.')
-        # Ensure spectra are sorted.
-        # todo : make it happen
-        # Instantiate RTPair.
+
+        # Instantiation.
         return cls(data[:, 0], data[:, 1], data[:, 2])
 
     @property
-    def energy(self):
-        """Return photon energy scale for this spectrum in eV."""
-        return 1239.842 / self.w
+    def n(self):
+        return self.first
+
+    @property
+    def k(self):
+        return self.second
 
     @property
     def alpha(self):
@@ -75,9 +63,9 @@ class OpticalConstantsSpectrum:
                              'energy': 'Photon energy (eV)'}[scale])
             ax_n.set_ylabel('n')
             ax_k.set_ylabel('k')
-            x = {'wavelength': self.w, 'energy': self.energy}[scale]
-            l_n, = ax_n.plot(x, self.n, c=OpticalConstantsSpectrum.COLORS['n'], label='n')
-            l_k, = ax_k.plot(x, self.k, c=OpticalConstantsSpectrum.COLORS['k'], label='k')
+            x = {'wavelength': self.w, 'energy': self.e}[scale]
+            l_n, = ax_n.plot(x, self.n, c=SpectrumPair.COLORS['first'], label='n')
+            l_k, = ax_k.plot(x, self.k, c=SpectrumPair.COLORS['second'], label='k')
             ax_k.legend(handles=(l_n, l_k), loc='best')
         elif scale == 'nk':
             ax.set_title(title)
@@ -105,4 +93,4 @@ class OpticalConstantsSpectrum:
         fname : str
             File name.
         """
-        np.savetxt(fname, self._data)
+        np.savetxt(fname, np.column_stack((self.w, self.n, self.k)))
