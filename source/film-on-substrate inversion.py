@@ -1,11 +1,16 @@
 """
-film on substrate inversion.py
+Original name: "film on substrate inversion.py"
 
 Calculate n and k spectra of a thin film from R&T spectra provided the substrate n and k are known.
 
-Root-finding method is used.
+Usage:
+1. Make sure `DATA_DIR`, `R_FILENAME`, and `T_FILENAME` point to the right places.
+2. 
 """
-from Spectrum import Spectrum, RTPair
+
+import os
+from pathlib import Path
+from RTPair import RTPair
 from OpticalConstantsSpectrum import OpticalConstantsSpectrum as OCS
 import numpy as np
 from scipy.optimize import root
@@ -14,6 +19,11 @@ import contourpy
 import shapely
 import itertools
 from calc import calc_RT_AFSA
+from scipy.interpolate import interp1d
+
+# Set the current directory.
+script_dir = Path(__file__).parent.resolve()
+os.chdir(script_dir)
 
 plt.style.use('style.mplstyle')
 plt.rcParams['savefig.directory'] = '.'
@@ -21,33 +31,30 @@ COLORS = [item['color'] for item in plt.rcParams['axes.prop_cycle'].__dict__['_l
 
 np.set_printoptions(precision=4)
 
-# From FTIR (Vertex, 02.04.2024)
-meas = Spectrum(VIS_T='../test data/T_254c(GST225_130nm)_Si.csv',
-                VIS_R='../test data/R_254c(GST225_130nm)_Si.csv',
-                VIS_detector='Si',
-                NIR_T='../test data/T_254c(GST225_130nm)_InGaAs.csv',
-                NIR_R='../test data/R_254c(GST225_130nm)_InGaAs.csv',
-                NIR_detector='InGaAs')
-meas.calculate_corrected(kind='uniform')
-rt = meas.FULL
+# Load thin-film sample spectrum data.
+DATA_DIR = Path('C:/Users/juriy/Documents/MEGA/Projects/GST spectroscopy/data/2025-07')
+R_FILENAME = 'R_GeTe_4819(130nm)_chocolate_bar.csv'
+T_FILENAME = 'T_GeTe_4819(130nm)_chocolate_bar.csv'
+film_rt = RTPair.from_ftir_files(DATA_DIR / R_FILENAME, DATA_DIR / T_FILENAME)
+film_rt.strip(550, 2250)
+film_rt.resample()
 
-# From spectrophotometry.
-# data = np.loadtxt('../data/Spectrophotometry/GST225.csv', skiprows=2)
-# rt = RTPair(data[:, 0], data[:, 2] / 100, data[:, 1] / 100)
-# rt.strip(400, 2500)  # use same range as for the substrate calculation
+# Load optical constants spectrum of substrate material.
+sub_nk = OCS.from_wnk_file('substrate (w,n,k).txt')
 
-# rt.plot()  # just to check if the thin-film sample data was loaded correctly
-wavelengths = rt.w
-
-sub = np.loadtxt('substrate (w,n,k).txt')
-
-# Check that wavelength scale is the same for the thin-film sample and the substrate data.
-if not np.allclose(rt.w, sub[:, 0], rtol=1e-6):
-    raise Exception('Wavelength scales are different!')
-print(f'{len(rt.w)} data points are loaded')
+# Check if resampling is needed.
+if len(sub_nk.w) == len(film_rt.w) and np.allclose(sub_nk.w, film_rt.w, rtol=1e-6):
+    print('Spectra of substrate and thin film have the same scale --- no resampling needed.')
+else:
+    print('Spectra of substrate and thin film have different scales. Resample for overlapped region.')
+    w_min, w_max = max(sub_nk.w[0], film_rt.w[0]), min(sub_nk.w[-1], film_rt.w[-1])
+    step = 0.5  # Step is fixed to 0.5 nm for the sake of simplicity.
+    scale = np.linspace(w_min, w_max, step)
+    film_rt.resample(scale)
+    sub_nk.resample(scale)
 
 # Thicknesses are known.
-d_film = 131.6  # nm
+d_film = 147.6  # nm
 d_sub = 0.7e-3 * 1e9  # nm
 
 # Graphical method is implemented as follows. For each trial pair of values of n and k within the limits both
@@ -94,9 +101,9 @@ cg_T = contourpy.contour_generator(n_trial, k_trial, T_trial, name='serial', lin
 
 all_roots = []
 # For each wavelength.
-for index, wl in enumerate(wavelengths):
-    n_sub, k_sub = sub[index, 1], sub[index, 2]
-    t_meas, r_meas = rt.T[index], rt.R[index]
+for index, wl in enumerate(film_rt.w):
+    n_sub, k_sub = sub_nk.n[index], sub_nk.k[index]
+    t_meas, r_meas = film_rt.T[index], film_rt.R[index]
     print(f'{index:>4} solving for {wl:.1f} nm, n_sub = {n_sub:.3f}, k_sub = {k_sub:.3g}')
 
     update_trial_matrix(wl, n_sub, k_sub, r_meas, t_meas)
@@ -134,8 +141,10 @@ for index, wl in enumerate(wavelengths):
 
 # Save all the roots to the text file.
 all_roots = np.array(all_roots)
-np.savetxt('roots.txt', all_roots)
+np.savetxt(f'roots.txt', all_roots)
+print('saved')
 
 nk = OCS(all_roots[:, 0], all_roots[:, 1], all_roots[:, 2])
-nk.plot(scale='nk')
-# nk.plot(scale='Tauc')
+# nk.plot(scale='nk')
+nk.plot(scale='wavelength')
+nk.show()
