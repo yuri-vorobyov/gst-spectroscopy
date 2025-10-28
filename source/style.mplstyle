@@ -28,7 +28,7 @@ ytick.major.width            : 1
 ytick.major.pad              : 3.0
 ytick.labelsize              : 9
 legend.facecolor             : white
-legend.framealpha            : 1.0
+legend.framealpha            : 0.8
 legend.fontsize              : 9
 legend.frameon               : True
 legend.fancybox              : True
