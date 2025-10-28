@@ -102,6 +102,8 @@ class SelectFromCollection:
         # Normal operation (control and shift keys are released) --- set as selected.
         if (not self.key_control) and (not self.key_shift):
             colors[self.ind] = self.selected_color
+        elif (self.key_shift) and (not self.key_control):
+            colors[self.ind] = self.default_color
         # Update
         self.collection.set_facecolors(colors)
         self.canvas.draw_idle()
@@ -128,11 +130,11 @@ class SelectFromCollection:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    plt.style.use('style.mplstyle')
+    from pathlib import Path as Pathlib
+    
+    plt.style.use(Pathlib(__file__).parent / 'style.mplstyle')
 
-    fname = 'roots 80.txt'
-
-    data = np.loadtxt(fname)  # roots are (w, n, k) tuples
+    data = np.loadtxt(Pathlib(__file__).parent / 'roots.txt')  # roots are (w, n, k) tuples
 
     fig, ax = plt.subplots()
     pts = ax.scatter(data[:, 1], data[:, 2], s=20)
@@ -143,11 +145,11 @@ if __name__ == '__main__':
 
     print('Draw a line around the points you want to remove.\nThey will be marked.\nRepeat if necessary.\nUse zoom '
           'and pan tools for precision, but don\'t forget to disable them afterwards.\n"Enter" key saves points which '
-          'were not selected back to the original file.')
+          'were not selected to the file "physical roots.txt".')
 
     def accept(event):
         if event.key == "enter":
-            np.savetxt(fname, data[selector.unselected()])
+            np.savetxt('physical roots.txt', data[selector.unselected()])
             print('saved!')
 
     fig.canvas.mpl_connect("key_press_event", accept)
