@@ -32,7 +32,7 @@ i_max = RpT.argmax()
 print(f'Maximum R + T is {RpT[i_max]:.4f}')
 print(f'              at {rt.w[i_max]:.1f} nm')
 print(f'{len(rt.w)} points')
-print(f'Step is from {rt.w[1] - rt.w[0]:.4f} nm to {rt.w[-1] - rt.w[-2]:.4f} nm')
+print(f'Step is {rt.w[1] - rt.w[0]:.4f} nm')
 
 
 rt.plot()

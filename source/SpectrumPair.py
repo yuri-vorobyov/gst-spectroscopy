@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 from scipy.interpolate import interp1d
-from sg_smooth.smoothing import smSG_bisquare
 import matplotlib.pyplot as plt
 
 
@@ -53,11 +52,6 @@ class SpectrumPair:
         self.first = self.first[ii]
         self.second = self.second[ii]
 
-        # Placeholders for the smoothed version.
-        self.sW = None
-        self.sFirst = None
-        self.sSecond = None
-
     @property
     def e(self):
         """Return photon energy scale in eV for this spectrum."""
@@ -97,28 +91,12 @@ class SpectrumPair:
         self.second = interp1d(self.w, self.second, kind='linear')(scale)
         self.w = scale
 
-    def calc_smoothed(self, w, n):
-        """
-        Calculate (update) filtered spectra.
-
-        Parameters
-        ----------
-        w : int
-            Radius of smoothing window (number of points).
-        n : int
-            Order of approximating polynomial.
-        """
-        self.sW, self.sFirst, _ = smSG_bisquare(self.w, self.first, w, n, extend=False)
-        _, self.sSecond, _ = smSG_bisquare(self.w, self.second, w, n, extend=False)
-
-    def plot(self, smoothed=False, scale='wavelength', title=''):
+    def plot(self, scale='wavelength', title=''):
         """
         Plot the spectrum.
 
         Parameters
         ----------
-        smoothed : bool
-            Set this to True to plot smoothed data. Raises an exception in case there is no smoothed data.
         scale : str
             Either `wavelength` or `energy`.
         title : str
@@ -139,14 +117,9 @@ class SpectrumPair:
         ax_first.set_ylabel(self.first_label)
         ax_second.set_ylabel(self.second_label)
 
-        if smoothed:
-            x = {'wavelength': self.sW, 'energy': self.sE}[scale]
-            y1 = self.sFirst
-            y2 = self.sSecond
-        else:
-            x = {'wavelength': self.w, 'energy': self.e}[scale]
-            y1 = self.first
-            y2 = self.second
+        x = {'wavelength': self.w, 'energy': self.e}[scale]
+        y1 = self.first
+        y2 = self.second
 
         l_first, = ax_first.plot(x, y1, c=SpectrumPair.COLORS['first'], alpha=0.7, label=self.first_label)
         l_second, = ax_second.plot(x, y2, c=SpectrumPair.COLORS['second'], alpha=0.7, label=self.second_label)

@@ -1,7 +1,6 @@
 import numpy as np
 import os.path
 from scipy.interpolate import interp1d
-from sg_smooth.smoothing import smSG_bisquare
 import matplotlib.pyplot as plt
 from SpectrumPair import SpectrumPair
 

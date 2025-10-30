@@ -1,9 +1,16 @@
 """
-remove points.py
+Original name: "remove unphysical roots.py"
 
 This script allows one to manually select points on a plot and remove them.
-"""
 
+Usage:
+1. Make sure `data` points to the right file.
+2. Run the script. The window will appear with all the roots found by `film-on-substrate inversion.py`.
+3. Use mouse to select some area. Points inside the area will be marked as unphysical roots (grey color).
+   Holding "Shift" while selecting marks points as physical roots.
+4. Once all the unphysical branches of the solution are marked, press "Enter" to save your results to
+   "physical roots.txt".
+"""
 
 import os
 import pathlib
