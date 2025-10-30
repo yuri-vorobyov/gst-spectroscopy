@@ -17,14 +17,22 @@ import os.path
 
 
 # Load data.
-DATA_DIR = 'C:\\Users\\juriy\\Documents\\MEGA\\Projects\\GST spectroscopy\\data\\2025-07'
-R_FILENAME = 'R_Glass_clean(1737f).csv'
-T_FILENAME = 'T_Glass_clean(1737f).csv'
+DATA_DIR = 'C:/Users/juriy/Documents/MEGA/Projects/GST spectroscopy/data/2025-07'
+R_FILENAME = 'R_GeTe_4819(130nm)_chocolate_bar.csv'
+T_FILENAME = 'T_GeTe_4819(130nm)_chocolate_bar.csv'
 rt = RTPair.from_ftir_files(os.path.join(DATA_DIR, R_FILENAME), os.path.join(DATA_DIR, T_FILENAME))
-rt.strip(0, 4000)
+rt.strip(550, 2250)
+rt.resample()
 
 # Print a bit of an overview.
 print(f'R spans from {rt.R.min():.4f} to {rt.R.max():.4f}')
 print(f'T spans from {rt.T.min():.4f} to {rt.T.max():.4f}')
-print(f'Maximum R + T is {(rt.R + rt.T).max():.4f}')
+RpT = rt.R + rt.T
+i_max = RpT.argmax()
+print(f'Maximum R + T is {RpT[i_max]:.4f}')
+print(f'              at {rt.w[i_max]:.1f} nm')
+print(f'{len(rt.w)} points')
+print(f'Step is from {rt.w[1] - rt.w[0]:.4f} nm to {rt.w[-1] - rt.w[-2]:.4f} nm')
+
+
 rt.plot()

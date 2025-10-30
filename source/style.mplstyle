@@ -41,4 +41,5 @@ savefig.dpi                  : 600
 savefig.transparent          : False
 mathtext.fontset             : cm
 font.family                  : serif
+font.size                    : 12 
 lines.linewidth              : 1.5

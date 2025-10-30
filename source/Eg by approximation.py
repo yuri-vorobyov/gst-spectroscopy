@@ -10,10 +10,16 @@ Usage:
 4. Repeat if necessary.
 """
 
+import os
+from pathlib import Path
 import numpy as np
 from OpticalConstantsSpectrum import OpticalConstantsSpectrum as OCS
 from pathlib import Path
 from matplotlib.widgets import SpanSelector
+
+# Set the current directory.
+script_dir = Path(__file__).parent.resolve()
+os.chdir(script_dir)
 
 # Load data.
 ocs = OCS.from_wnk_file(f'physical roots.txt')

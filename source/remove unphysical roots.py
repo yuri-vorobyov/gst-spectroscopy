@@ -5,10 +5,15 @@ This script allows one to manually select points on a plot and remove them.
 """
 
 
+import os
+import pathlib
 import numpy as np
-
 from matplotlib.path import Path
 from matplotlib.widgets import LassoSelector
+
+# Set the current directory.
+script_dir = pathlib.Path(__file__).parent.resolve()
+os.chdir(script_dir)
 
 
 class SelectFromCollection:
@@ -134,7 +139,7 @@ if __name__ == '__main__':
     
     plt.style.use(Pathlib(__file__).parent / 'style.mplstyle')
 
-    data = np.loadtxt(Pathlib(__file__).parent / 'roots.txt')  # roots are (w, n, k) tuples
+    data = np.loadtxt(Pathlib(__file__).parent / 'all roots.txt')  # roots are (w, n, k) tuples
 
     fig, ax = plt.subplots()
     pts = ax.scatter(data[:, 1], data[:, 2], s=20)

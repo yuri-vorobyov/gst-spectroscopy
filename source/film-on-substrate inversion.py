@@ -5,7 +5,10 @@ Calculate n and k spectra of a thin film from R&T spectra provided the substrate
 
 Usage:
 1. Make sure `DATA_DIR`, `R_FILENAME`, and `T_FILENAME` point to the right places.
-2. 
+2. Make sure `sub_nk` points to the file from `substrate inversion.py` script.
+3. Set `d_film` to the known film thickness.
+4. Run the script. Wait until window with roots is shown. Roots are saved to the text file.
+5. Adjust the film thickness until the picture of roots is physically sound (has characteristic intersection).
 """
 
 import os
@@ -19,7 +22,6 @@ import contourpy
 import shapely
 import itertools
 from calc import calc_RT_AFSA
-from scipy.interpolate import interp1d
 
 # Set the current directory.
 script_dir = Path(__file__).parent.resolve()
@@ -141,10 +143,9 @@ for index, wl in enumerate(film_rt.w):
 
 # Save all the roots to the text file.
 all_roots = np.array(all_roots)
-np.savetxt(f'roots.txt', all_roots)
+np.savetxt(f'all roots.txt', all_roots)
 print('saved')
 
 nk = OCS(all_roots[:, 0], all_roots[:, 1], all_roots[:, 2])
-# nk.plot(scale='nk')
 nk.plot(scale='wavelength')
 nk.show()

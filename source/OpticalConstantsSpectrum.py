@@ -50,7 +50,7 @@ class OpticalConstantsSpectrum(SpectrumPair):
         if scale not in {'wavelength', 'energy', 'nk', 'Tauc'}:
             raise Exception('`scale` supports only "wavelength", "energy", "nk", or "Tauc"')
 
-        plt.style.use('style.mplstyle')
+        plt.style.use(Path(__file__).parent / 'style.mplstyle')
         plt.rcParams['savefig.directory'] = '.'
         fig, ax = plt.subplots(1, 1)
         fig.canvas.manager.set_window_title(title)
@@ -64,8 +64,8 @@ class OpticalConstantsSpectrum(SpectrumPair):
             ax_n.set_ylabel('n')
             ax_k.set_ylabel('k')
             x = {'wavelength': self.w, 'energy': self.e}[scale]
-            l_n, = ax_n.plot(x, self.n, c=SpectrumPair.COLORS['first'], label='n')
-            l_k, = ax_k.plot(x, self.k, c=SpectrumPair.COLORS['second'], label='k')
+            l_n, = ax_n.plot(x, self.n, '.', ms=3, c=SpectrumPair.COLORS['first'], label='n')
+            l_k, = ax_k.plot(x, self.k, '.', ms=3, c=SpectrumPair.COLORS['second'], label='k')
             ax_k.legend(handles=(l_n, l_k), loc='best')
         elif scale == 'nk':
             ax.set_title(title)
@@ -74,10 +74,11 @@ class OpticalConstantsSpectrum(SpectrumPair):
             ax.plot(self.n, self.k, '.', ms=4, mec='none', alpha=0.7)
         elif scale == 'Tauc':
             ax.set_title(title)
-            ax.set_xlabel(r'Photon energy (eV)')
+            ax.set_xlabel(r'$ \mathbf{\mathrm{Photon \, energy \, (eV)}} $')
             ax.set_ylabel(r'$ \mathbf{\mathrm{\left(\alpha E\right)^{1/2}\,(cm^{-1})}} $')
-            kwargs = dict(ms=4, c=OpticalConstantsSpectrum.COLORS['k'], alpha=0.7)
-            ax.plot(self.energy, (self.alpha * self.energy)**0.5, '.', **kwargs)
+            kwargs = dict(ms=4, c=SpectrumPair.COLORS['second'], alpha=0.7)
+            ax.plot(self.e, (self.alpha * self.e)**0.5, '.', **kwargs)
+            ax.set_ylim(0, None)
 
         return ax
 

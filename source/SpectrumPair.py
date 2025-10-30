@@ -1,6 +1,5 @@
 import numpy as np
 from pathlib import Path
-import os.path
 from scipy.interpolate import interp1d
 from sg_smooth.smoothing import smSG_bisquare
 import matplotlib.pyplot as plt
@@ -44,9 +43,9 @@ class SpectrumPair:
 
         # Ensure spectra are sorted by the wavelength.
         ii = np.argsort(w)
-        self.w = w[ii]
-        self.first = first[ii]
-        self.second = second[ii]
+        self.w = np.asarray(w)[ii]
+        self.first = np.asarray(first)[ii]
+        self.second = np.asarray(second)[ii]
 
         # Remove negative values.
         ii = (self.first > 0) * (self.second > 0)
@@ -84,16 +83,16 @@ class SpectrumPair:
         self.first = self.first[ii]
         self.second = self.second[ii]
 
-    def resample(self, step=None):
+    def resample(self, *, step=None, scale=None):
         """
-        Resample the spectrum using uniform step.
+        Resample the spectrum using interpolation.
         """
-        # The `step` is allowed to be inferred from the data. It is the maximum separation between
-        # data points.
-        if step is None:
-            step = (self.w[1:] - self.w[:-1]).max()
+        if scale is None:
+            if step is None:
+                # The step for resampling could be inferred from the data.
+                step = (self.w[1:] - self.w[:-1]).max()
+            scale = np.linspace(self.w[0], self.w[-1], int(np.ceil((self.w[-1] - self.w[0]) / step)) + 1)
 
-        scale = np.linspace(self.w[0], self.w[-1], int(np.ceil((self.w[-1] - self.w[0]) / step)) + 1)
         self.first = interp1d(self.w, self.first, kind='linear')(scale)
         self.second = interp1d(self.w, self.second, kind='linear')(scale)
         self.w = scale
@@ -129,8 +128,8 @@ class SpectrumPair:
             raise Exception('`scale` support only "wavelength" or "energy"')
 
         # Here we assume that "style.mplstyle" is placed near this script.
-        plt.style.use(Path(__file__).parent() / 'style.mplstyle')
-        plt.rcParams['savefig.directory'] = Path(__file__).parent()
+        plt.style.use(Path(__file__).parent / 'style.mplstyle')
+        plt.rcParams['savefig.directory'] = Path(__file__).parent
         fig, ax_first = plt.subplots(1, 1)
         fig.canvas.manager.set_window_title(title)
         ax_second = ax_first.twinx()
