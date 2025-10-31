@@ -15,10 +15,13 @@ Usage:
 
 from RTPair import RTPair
 from pathlib import Path
+import os
+
+os.chdir(Path(__file__).parent.resolve())
 
 
 # Load data.
-DATA_DIR = Path("C:/Users/juriy/Documents/MEGA/Projects/GST spectroscopy/data/2025-07")
+DATA_DIR = Path("../test data")
 R_FILENAME = "R_GeTe_4819(130nm)_chocolate_bar.csv"
 T_FILENAME = "T_GeTe_4819(130nm)_chocolate_bar.csv"
 rt = RTPair.from_ftir_files(DATA_DIR / R_FILENAME, DATA_DIR / T_FILENAME)

@@ -26,9 +26,7 @@ import shapely
 import itertools
 from calc import calc_RT_AFSA
 
-# Set the current directory.
-script_dir = Path(__file__).parent.resolve()
-os.chdir(script_dir)
+os.chdir(Path(__file__).parent.resolve())
 
 plt.style.use("style.mplstyle")
 plt.rcParams["savefig.directory"] = "."
@@ -37,7 +35,7 @@ COLORS = [item["color"] for item in plt.rcParams["axes.prop_cycle"].__dict__["_l
 np.set_printoptions(precision=4)
 
 # Load thin-film sample spectrum data.
-DATA_DIR = Path("C:/Users/juriy/Documents/MEGA/Projects/GST spectroscopy/data/2025-07")
+DATA_DIR = Path("../test data")
 R_FILENAME = "R_GeTe_4819(130nm)_chocolate_bar.csv"
 T_FILENAME = "T_GeTe_4819(130nm)_chocolate_bar.csv"
 film_rt = RTPair.from_ftir_files(DATA_DIR / R_FILENAME, DATA_DIR / T_FILENAME)

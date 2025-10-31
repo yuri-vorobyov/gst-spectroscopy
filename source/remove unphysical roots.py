@@ -5,11 +5,12 @@ This script allows one to manually select points on a plot and remove them.
 
 Usage:
 1. Make sure `data` points to the right file.
-2. Run the script. The window will appear with all the roots found by `film-on-substrate inversion.py`.
-3. Use mouse to select some area. Points inside the area will be marked as unphysical roots (grey color).
-   Holding "Shift" while selecting marks points as physical roots.
-4. Once all the unphysical branches of the solution are marked, press "Enter" to save your results to
-   "physical roots.txt".
+2. Run the script. The window will appear with all the roots found by `film-on-substrate
+   inversion.py`.
+3. Use mouse to select some area. Points inside the area will be marked as unphysical
+   roots (grey color). Holding "Shift" while selecting marks points as physical roots.
+4. Once all the unphysical branches of the solution are marked, press "Enter" to save
+   your results to "physical roots.txt".
 """
 
 import os
@@ -18,22 +19,19 @@ import numpy as np
 from matplotlib.path import Path
 from matplotlib.widgets import LassoSelector
 
-# Set the current directory.
-script_dir = pathlib.Path(__file__).parent.resolve()
-os.chdir(script_dir)
+os.chdir(pathlib.Path(__file__).parent.resolve())
 
 
 class SelectFromCollection:
     """
     Select indices from a matplotlib collection using `LassoSelector`.
 
-    Selected indices are saved in the `ind` attribute. This tool fades out the
-    points that are not part of the selection (i.e., reduces their alpha
-    values). If your collection has alpha < 1, this tool will permanently
-    alter the alpha values.
+    Selected indices are saved in the `ind` attribute. This tool fades out the points
+    that are not part of the selection (i.e., reduces their alpha values). If your
+    collection has alpha < 1, this tool will permanently alter the alpha values.
 
-    Note that this tool selects collection objects based on their *origins*
-    (i.e., `offsets`).
+    Note that this tool selects collection objects based on their *origins* (i.e.,
+    `offsets`).
 
     Parameters
     ----------
@@ -42,8 +40,8 @@ class SelectFromCollection:
     collection : `matplotlib.collections.Collection` subclass
         Collection you want to select from.
     alpha_other : 0 <= float <= 1
-        To highlight a selection, this tool sets all selected points to an
-        alpha value of 1 and non-selected points to *alpha_other*.
+        To highlight a selection, this tool sets all selected points to an alpha value
+        of 1 and non-selected points to *alpha_other*.
     """
 
     def __init__(self, axes, collection, alpha_other=0.3):
@@ -58,14 +56,14 @@ class SelectFromCollection:
         # Ensure that we have separate colors for each object
         self.fc = collection.get_facecolors()
         if len(self.fc) == 0:
-            raise ValueError('Collection must have a facecolor property.')
+            raise ValueError("Collection must have a facecolor property.")
         # Set default color
         self.default_color = [0.12156863, 0.46666667, 0.70588235, 0.6]
         # And "selected" color
         self.selected_color = [0.7, 0.84, 0.64, 0.3]
         self.fc = np.tile(self.default_color, (self.Npts, 1))
         self.collection.set_facecolor(self.fc)
-        self.collection.set_edgecolor('none')
+        self.collection.set_edgecolor("none")
 
         self.lasso = LassoSelector(ax, onselect=self.on_select)
 
@@ -76,8 +74,10 @@ class SelectFromCollection:
         self.key_control = False
         self.key_shift = False
 
-        self.keyPress = self.canvas.mpl_connect('key_press_event', self.on_key_press)
-        self.keyRelease = self.canvas.mpl_connect('key_release_event', self.on_key_release)
+        self.keyPress = self.canvas.mpl_connect("key_press_event", self.on_key_press)
+        self.keyRelease = self.canvas.mpl_connect(
+            "key_release_event", self.on_key_release
+        )
 
     def delete_selected(self):
         """Remove selected points, if any."""
@@ -105,7 +105,9 @@ class SelectFromCollection:
     def on_select(self, vertices):
         # Save color for each point (including alpha value).
         colors = self.collection.get_facecolors()
-        if len(colors) == 1:  # in case all the points have the same color the single color is returned
+        if (
+            len(colors) == 1
+        ):  # in case all the points have the same color the single color is returned
             colors = np.tile(colors, (self.Npts, 1))
         # Assemble lasso path.
         path = Path(vertices)
@@ -121,48 +123,56 @@ class SelectFromCollection:
         self.canvas.draw_idle()
 
     def on_key_press(self, event):
-        if event.key == 'control':
+        if event.key == "control":
             self.key_control = True
-        if event.key == 'shift':
+        if event.key == "shift":
             self.key_shift = True
 
     def on_key_release(self, event):
-        if event.key == 'control':
+        if event.key == "control":
             self.key_control = False
-        if event.key == 'shift':
+        if event.key == "shift":
             self.key_shift = False
 
     def disconnect(self):
-        """ Disable selecting capability. """
+        """Disable selecting capability."""
         self.lasso.disconnect_events()
         self.fc[:, -1] = 1
         self.collection.set_facecolors(self.fc)
         self.canvas.draw_idle()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from pathlib import Path as Pathlib
-    
-    plt.style.use(Pathlib(__file__).parent / 'style.mplstyle')
 
-    data = np.loadtxt(Pathlib(__file__).parent / 'all roots.txt')  # roots are (w, n, k) tuples
+    plt.style.use(Pathlib(__file__).parent / "style.mplstyle")
+
+    data = np.loadtxt(
+        Pathlib(__file__).parent / "all roots.txt"
+    )  # roots are (w, n, k) tuples
 
     fig, ax = plt.subplots()
     pts = ax.scatter(data[:, 1], data[:, 2], s=20)
-    ax.set_xlabel('n')
-    ax.set_ylabel('k')
+    ax.set_xlabel("n")
+    ax.set_ylabel("k")
 
     selector = SelectFromCollection(ax, pts)
 
-    print('Draw a line around the points you want to remove.\nThey will be marked.\nRepeat if necessary.\nUse zoom '
-          'and pan tools for precision, but don\'t forget to disable them afterwards.\n"Enter" key saves points which '
-          'were not selected to the file "physical roots.txt".')
+    print(
+        "Draw a line around the points you want to remove.\n"
+        "They will be marked.\n"
+        "Repeat if necessary.\n"
+        "Use zoom and pan tools for precision, but don't forget to disable them "
+        "afterwards.\n"
+        "Enter key saves points which were not selected to the file "
+        '"physical roots.txt".'
+    )
 
     def accept(event):
         if event.key == "enter":
-            np.savetxt('physical roots.txt', data[selector.unselected()])
-            print('saved!')
+            np.savetxt("physical roots.txt", data[selector.unselected()])
+            print("saved!")
 
     fig.canvas.mpl_connect("key_press_event", accept)
 
