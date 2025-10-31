@@ -1,12 +1,13 @@
 """
 Original name: "substrate inversion.py"
 
-Calculate n and k spectra of substrate sample from its corresponding R&T spectra using root-finding
-method. Interference is neglected. Inversion in case of single substrate gives only one root, so the
-whole process is automatic.
+Calculate n and k spectra of substrate sample from its corresponding R&T spectra using
+root-finding method. Interference is neglected. Inversion in case of single substrate
+gives only one root, so the whole process is automatic.
 
 Usage:
-1. Change `DATA_DIR`, `R_FILENAME`, and `T_FILENAME` constants in accordance with the location of data files.
+1. Change `DATA_DIR`, `R_FILENAME`, and `T_FILENAME` constants in accordance with the
+   location of data files.
 2. Change `D_SUB` constant so that its value is the substrate thickness in nanometers.
 3. Run the script and wait until the n&k plot is shown.
 4. Results are saved to the text file.
@@ -26,9 +27,9 @@ script_dir = Path(__file__).parent.resolve()
 os.chdir(script_dir)
 
 # Load data.
-DATA_DIR = Path('C:/Users/juriy/Documents/MEGA/Projects/GST spectroscopy/data/2025-07')
-R_FILENAME = 'R_Glass_clean(1737f).csv'
-T_FILENAME = 'T_Glass_clean(1737f).csv'
+DATA_DIR = Path("C:/Users/juriy/Documents/MEGA/Projects/GST spectroscopy/data/2025-07")
+R_FILENAME = "R_Glass_clean(1737f).csv"
+T_FILENAME = "T_Glass_clean(1737f).csv"
 rt = RTPair.from_ftir_files(DATA_DIR / R_FILENAME, DATA_DIR / T_FILENAME)
 rt.strip(550, 2250)
 rt.resample()
@@ -42,8 +43,7 @@ D_SUB = 0.7e-3 * 1e9  # nm
 ns, ks = [], []  # containers for n and k values
 x0 = np.asarray([1.5, 0])  # initial guess [n, k]
 for w, r_meas, t_meas in zip(rt.w, rt.R, rt.T):
-    print(f'solve at {w:.1f} nm, R_meas = {r_meas:.3f}, T_meas = {t_meas:.3f}')
-
+    print(f"solve at {w:.1f} nm, R_meas = {r_meas:.3f}, T_meas = {t_meas:.3f}")
 
     def f(x):
         """The function for root finding."""
@@ -51,16 +51,15 @@ for w, r_meas, t_meas in zip(rt.w, rt.R, rt.T):
         r_calc, t_calc = calc_RT_ASA(w, n, k, D_SUB)
         return r_calc - r_meas, t_calc - t_meas
 
-
     # Solution.
     res = root(f, x0)
     if res.success:
-        print(f'    {res.x}')
+        print(f"    {res.x}")
         ns.append(res.x[0])
         ks.append(res.x[1])
         x0 = res.x  # modify initial guess to improve convergence speed
     else:
-        raise Exception('Could not converge.')
+        raise Exception("Could not converge.")
 
 
 ocs = OCS(wavelengths, ns, ks)
@@ -68,5 +67,5 @@ ocs.plot()
 ocs.show()
 
 # Finally, save the n and k for latter use.
-ocs.save('substrate (w,n,k).txt')
-print('saved')
+ocs.save("substrate (w,n,k).txt")
+print("saved")
